@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 import hashlib
@@ -65,6 +66,7 @@ def env_bool(env, name, default=True):
 class Config:
     host: str
     protocol: str = "ssh"
+    target_os: str = "linux"
     interval: float = 30
     timeout: float = 10
     thresholds: dict = field(default_factory=lambda: {"cpu": 75., "ram": 65., "temp": 65.})
@@ -94,6 +96,8 @@ class Config:
     def device_key(self):
         port = self.ssh_port if self.protocol == "ssh" else self.snmp_port
         identity = [self.protocol, self.host, port, self.iface, self.oids]
+        if self.target_os != "linux":
+            identity.append(self.target_os)
         return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
     @classmethod
@@ -106,6 +110,9 @@ class Config:
         c.protocol = e.get("MONITOR_PROTOCOL", "ssh").lower()
         if c.protocol not in {"ssh", "snmp"}:
             raise ConfigError("MONITOR_PROTOCOL phải là ssh hoặc snmp")
+        c.target_os = e.get("MONITOR_OS", "linux").lower()
+        if c.target_os not in {"linux", "windows"}:
+            raise ConfigError("MONITOR_OS phải là linux hoặc windows")
         c.interval = env_number(e, "MONITOR_INTERVAL", 30, 1, 86400)
         c.timeout = env_number(e, "MONITOR_TIMEOUT", 10, 1, 120)
         c.recovery_margin = env_number(e, "RECOVERY_MARGIN", 5, 0, 50)
@@ -114,8 +121,9 @@ class Config:
             c.thresholds[metric] = env_number(e, f"{metric.upper()}_THRESHOLD", default, 0, 200 if metric == "temp" else 100)
             if c.recovery_margin > c.thresholds[metric]:
                 raise ConfigError("RECOVERY_MARGIN không được lớn hơn ngưỡng cảnh báo")
-        c.iface = e.get("MONITOR_IFACE", "ens33")
-        if not re.fullmatch(r"[A-Za-z0-9_.:@\-]{1,64}", c.iface):
+        c.iface = e.get("MONITOR_IFACE", "Wi-Fi" if c.target_os == "windows" else "ens33")
+        iface_pattern = r"[^\x00-\x1f\x7f]{1,128}" if c.target_os == "windows" else r"[A-Za-z0-9_.:@\-]{1,64}"
+        if not re.fullmatch(iface_pattern, c.iface):
             raise ConfigError("MONITOR_IFACE không hợp lệ")
         c.state_file = Path(e.get("MONITOR_STATE_FILE", str(c.state_file))).expanduser().resolve()
         c.ssh_port = cls.port(e, "SSH_PORT", 22)
@@ -124,6 +132,8 @@ class Config:
         c.ssh_key = e.get("SSH_KEY_FILE", "")
         c.known_hosts = e.get("SSH_KNOWN_HOSTS", "~/.ssh/known_hosts")
         c.temp_path = e.get("MONITOR_TEMP_PATH", "")
+        if c.target_os == "windows" and c.temp_path:
+            raise ConfigError("MONITOR_TEMP_PATH chỉ dành cho cảm biến Linux")
         if c.temp_path and (not c.temp_path.startswith("/sys/") or ".." in Path(c.temp_path).parts or not re.fullmatch(r"[/A-Za-z0-9_.:\-]+", c.temp_path)):
             raise ConfigError("MONITOR_TEMP_PATH phải là đường dẫn cảm biến bên dưới /sys/")
         c.snmp_port = cls.port(e, "SNMP_PORT", 161)
@@ -217,6 +227,79 @@ class Sample:
     errors: dict = field(default_factory=dict)
 
 
+def windows_command(config):
+    """An encoded command works with both Windows OpenSSH cmd and PowerShell shells."""
+    script = r"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+$r = @{values=@{}; errors=@{}}
+try {
+  $c = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'"
+  if ($null -eq $c.PercentProcessorTime) { throw 'missing' }
+  $r.values.cpu = [double]$c.PercentProcessorTime
+} catch { $r.errors.cpu = 'CPU query failed or access denied' }
+try {
+  $m = Get-CimInstance Win32_OperatingSystem
+  if ([double]$m.TotalVisibleMemorySize -le 0) { throw 'missing' }
+  $r.values.ram = 100 * (1 - [double]$m.FreePhysicalMemory / [double]$m.TotalVisibleMemorySize)
+} catch { $r.errors.ram = 'RAM query failed or access denied' }
+try {
+  $n = Get-NetAdapter -IncludeHidden | Where-Object { $_.Name -eq __IFACE__ } | Select-Object -First 1
+  if ($null -eq $n) { throw 'missing' }
+  $r.values.iface = switch ([string]$n.Status) {
+    'Up' {'up'}
+    'Disconnected' {'down'}
+    'Disabled' {'down'}
+    'Not Present' {'notpresent'}
+    'LowerLayerDown' {'lowerlayerdown'}
+    default {'unknown'}
+  }
+} catch { $r.errors.iface = 'Adapter missing or access denied' }
+if (__TEMP__) {
+  try {
+    $hw = @(Get-CimInstance -Namespace root/LibreHardwareMonitor -ClassName Hardware |
+      Where-Object { $_.HardwareType -eq 'Cpu' } | Select-Object -ExpandProperty Identifier)
+    $t = @(Get-CimInstance -Namespace root/LibreHardwareMonitor -ClassName Sensor |
+      Where-Object { $_.SensorType -eq 'Temperature' -and $_.Parent -in $hw -and $null -ne $_.Value })
+    if ($t.Count -eq 0) { throw 'missing' }
+    $r.values.temp = [double](($t | Measure-Object -Property Value -Maximum).Maximum)
+  } catch { $r.errors.temp = 'CPU sensor unavailable; LibreHardwareMonitor WMI required' }
+}
+$r | ConvertTo-Json -Compress -Depth 4
+"""
+    script = script.replace("__TEMP__", "$true" if config.temp_enabled else "$false")
+    script = script.replace("__IFACE__", "'" + config.iface.replace("'", "''") + "'")
+    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+    return "powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand " + encoded
+
+
+def windows_sample(raw, temp_enabled):
+    try:
+        data = json.loads(raw.lstrip("\ufeff"))
+        if not isinstance(data, dict) or not isinstance(data.get("values"), dict):
+            raise ValueError
+    except (ValueError, TypeError):
+        raise DataError("PowerShell không trả về JSON hợp lệ") from None
+    values, errors = {}, {}
+    metrics = ["cpu", "ram", "iface"] + (["temp"] if temp_enabled else [])
+    for metric in metrics:
+        try:
+            value = data["values"].get(metric)
+            if value is None:
+                raise DataError("Không có dữ liệu hoặc không đủ quyền truy vấn Windows")
+            if metric == "iface":
+                if value not in {"up", "down", "lowerlayerdown", "notpresent", "unknown"}:
+                    raise DataError("Trạng thái adapter Windows không hợp lệ")
+            else:
+                value = number(value, -50 if metric == "temp" else 0, 200 if metric == "temp" else 100)
+            values[metric] = value
+        except (DataError, TypeError) as exc:
+            values[metric] = None
+            errors[metric] = str(exc) if isinstance(exc, DataError) else "Dữ liệu Windows không hợp lệ"
+    return Sample(values, errors)
+
+
 class SSHCollector:
     CPU_CMD = "LC_ALL=C sh -c 'cat /proc/stat; sleep 1; cat /proc/stat'"
     TEMP_CMD = """LC_ALL=C sh -c '
@@ -279,6 +362,13 @@ done
                     if transport is None or not transport.is_active():
                         raise DeviceUnavailable("Mất kết nối SSH khi thu thập") from None
                     raise DataError(f"Không đọc được lệnh SSH ({type(exc).__name__})") from None
+
+            if self.c.target_os == "windows":
+                try:
+                    return windows_sample(read(windows_command(self.c)), self.c.temp_enabled)
+                except DataError as exc:
+                    metrics = ["cpu", "ram", "iface"] + (["temp"] if self.c.temp_enabled else [])
+                    return Sample({k: None for k in metrics}, {k: str(exc) for k in metrics})
 
             probes = {
                 "cpu": (self.CPU_CMD, cpu_percent),

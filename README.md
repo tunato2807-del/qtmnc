@@ -3,11 +3,14 @@
 Bản sửa của `monitor_ssh.py`, dùng Python 3.10 trở lên. Mỗi tiến trình giám sát
 một thiết bị, bằng **SSH hoặc SNMP**, và gửi cảnh báo qua **Telegram, Slack hoặc
 cả hai**. Máy chạy script cần truy cập mạng được tới thiết bị và HTTPS tới các
-dịch vụ nhắn tin. Máy được giám sát qua SSH phải là Linux có `/proc` và `/sys`.
+dịch vụ nhắn tin. Thiết bị đích SSH có thể là Linux (`MONITOR_OS=linux`, mặc định)
+hoặc Windows 10/11 có OpenSSH Server và Windows PowerShell 5.1 (`MONITOR_OS=windows`).
+
+**[Hướng dẫn từng bước: máy ảo Linux giám sát máy thật Windows qua VMware NAT](LINUX_VM_TO_WINDOWS.md)**
 
 ## Các lỗi đã sửa
 
-- CPU lấy chênh lệch hai mẫu `/proc/stat` cách nhau một giây; không phụ thuộc
+- CPU Linux lấy chênh lệch hai mẫu `/proc/stat` cách nhau một giây; không phụ thuộc
   định dạng/ngôn ngữ `top`, không tính trùng guest time.
 - RAM ưu tiên `MemAvailable`, có cách tính dự phòng cho Linux cũ.
 - Cảm biến thiếu/lỗi trả về `UNKNOWN`, không giả thành 0°C hoặc báo phục hồi sai.
@@ -58,12 +61,13 @@ Sửa `.env` bằng trình soạn thảo, không ghi secret vào mã nguồn:
 
 | Biến | Ý nghĩa |
 |---|---|
-| `MONITOR_HOST` | IP/hostname thiết bị Linux |
+| `MONITOR_HOST` | IP/hostname thiết bị được giám sát |
+| `MONITOR_OS` | Hệ điều hành thiết bị đích: `linux` hoặc `windows` |
 | `SSH_USER` | Tài khoản có quyền đọc các chỉ số; không cần root |
 | `SSH_KEY_FILE` | Đường dẫn private key, nếu dùng key; bỏ trống để dùng ssh-agent/key mặc định |
 | `SSH_PASSWORD` | Chỉ điền nếu dùng mật khẩu |
 | `SSH_KNOWN_HOSTS` | File known_hosts chứa host key thiết bị đã được xác minh |
-| `MONITOR_IFACE` | Interface thật trên thiết bị, kiểm tra bằng `ip link` |
+| `MONITOR_IFACE` | Tên interface trên thiết bị: `ip link` (Linux), `Get-NetAdapter` (Windows) |
 | `TELEGRAM_TOKEN` | Token bot mới do BotFather cấp |
 | `TELEGRAM_CHAT_ID` | Chat nhận tin; cần nhắn `/start` cho bot hoặc thêm bot vào nhóm phù hợp |
 
@@ -91,6 +95,16 @@ liệu một lần, không giả thành nhiệt độ bình thường. Nếu đ�
 đặt `MONITOR_TEMP_ENABLED=false`; chỉ số này sẽ được bỏ qua và cần ghi rõ trong
 báo cáo demo. Có cảm biến riêng thì đặt `MONITOR_TEMP_PATH` tới file millidegree
 bên dưới `/sys/`, ví dụ một file `temp*_input` đã xác minh đúng là cảm biến CPU.
+
+### Nhiệt độ Windows
+
+Đặt `MONITOR_OS=windows`. CPU/RAM/interface được lấy bằng PowerShell qua SSH.
+Nếu bật nhiệt độ, bộ thu thập truy vấn WMI `root/LibreHardwareMonitor`, chỉ chọn
+cảm biến thuộc phần cứng loại CPU. Cần tự cài và chạy LibreHardwareMonitor với
+WMI provider hoạt động, đủ quyền truy vấn và phần cứng được hỗ trợ. Thiếu provider
+hoặc cảm biến sẽ là `UNKNOWN`; không thay bằng nhiệt độ ACPI không xác định.
+`MONITOR_TEMP_PATH` chỉ dành cho Linux. Có thể bắt đầu với
+`MONITOR_TEMP_ENABLED=false` và ghi rõ chưa giám sát nhiệt độ trong demo.
 
 ## 3. Slack và SNMP
 
