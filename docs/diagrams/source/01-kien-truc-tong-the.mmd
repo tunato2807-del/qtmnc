@@ -1,32 +1,25 @@
-flowchart LR
+flowchart TB
     admin["Người quản trị"]
-    subgraph pc["MÁY THẬT WINDOWS"]
-        env["Cấu hình .env<br/>Không đưa secret vào mã"]
-        core["Python monitor_ssh.py<br/>Lập lịch + đánh giá trạng thái"]
-        ui["Dashboard Terminal<br/>CPU / RAM / interface"]
-        db[("SQLite<br/>Trạng thái + outbox")]
-        sender["Luồng gửi cảnh báo<br/>Retry + xác nhận API"]
-        env --> core
-        core --> ui
-        core <--> db
-        db --> sender
+    subgraph win["WINDOWS — VS CODE / PYTHON"]
+      env[".env.gns3 + known_hosts"]
+      app["device_monitor<br/>Lập lịch 5s + trạng thái"]
+      collectors["SSH / SNMP / HYBRID"]
+      ui["Dashboard: chỉ số, nguồn và trạng thái"]
+      db[("SQLite: states + outbox")]
+      sender["Luồng gửi: retry và xác nhận API"]
+      env --> app --> collectors
+      app --> ui
+      app --> db --> sender
     end
-    linux["MÁY ẢO LINUX<br/>192.168.73.129<br/>OpenSSH Server"]
-    agent["SNMP agent / thiết bị hỗ trợ<br/>Tùy chọn; chưa xác minh trong demo"]
-    telegram["Telegram Bot API"]
-    slack["Slack Incoming Webhook<br/>Tùy chọn"]
-    app["Ứng dụng nhắn tin<br/>Người quản trị nhận cảnh báo"]
-    admin -->|"Cấu hình / khởi chạy / xem"| core
-    core -->|"SSH • TCP 22<br/>Đọc chỉ số mỗi 30 giây"| linux
-    linux -->|"Kết quả lệnh"| core
-    core -. "SNMP • UDP 161<br/>Phương án thay thế SSH" .-> agent
-    sender -->|"HTTPS • TCP 443"| telegram
-    sender -. "HTTPS • TCP 443" .-> slack
-    telegram --> app
-    slack -.-> app
-    classDef primary fill:#eaf2ff,stroke:#2563eb,color:#0f172a;
-    classDef storage fill:#ecfdf5,stroke:#059669,color:#064e3b;
-    classDef optional fill:#fffbeb,stroke:#d97706,stroke-dasharray:6 4,color:#78350f;
-    class core,linux,telegram,ui primary;
-    class db storage;
-    class agent,slack optional;
+    gns["GNS3 local Windows<br/>Cloud VMnet1 ↔ Switch ↔ Cloud VMnet2"]
+    linux["Ubuntu VM: 192.168.10.129<br/>OpenSSH + Net-SNMP extend / IF-MIB"]
+    temp["Nhiệt: auto → cảm biến / UNKNOWN<br/>demo luôn có nhãn MÔ PHỎNG"]
+    tg["Telegram Bot API"]
+    slack["Slack Incoming Webhook"]
+    receiver["Ứng dụng nhận cảnh báo / phục hồi"]
+    admin --> env
+    collectors <-->|"SSH 22 / SNMP 161"| gns
+    gns <--> linux
+    linux -.- temp
+    sender -->|"HTTPS"| tg --> receiver
+    sender -->|"HTTPS"| slack --> receiver

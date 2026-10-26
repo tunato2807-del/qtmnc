@@ -3,29 +3,29 @@
     "stem": "01-kien-truc-tong-the",
     "title": "Kiến trúc tổng thể hệ thống",
     "chapter": "Tổng quan / kiến trúc hệ thống",
-    "caption": "Windows chạy Python để thu thập từ Linux VM, đánh giá trạng thái, lưu SQLite và gửi cảnh báo bằng luồng riêng. SNMP là phương án thu thập thay thế; Slack là kênh gửi tùy chọn.",
-    "notes": "Luồng liền mô tả mô hình SSH + Telegram đang triển khai. Nét đứt màu vàng là phần tùy chọn đã có trong mã, chưa được xác minh trên môi trường demo của người dùng."
+    "caption": "Windows chạy Python, thu chỉ số Linux qua đường GNS3 bằng SSH/SNMP hoặc hybrid, đánh giá trạng thái, lưu SQLite và gửi Telegram/Slack bằng luồng riêng.",
+    "notes": "Profile GNS3 lấy mẫu mỗi 5 giây. Nhiệt độ VM có thể UNKNOWN; nguồn demo phải ghi MÔ PHỎNG. Các kênh và giao thức được chọn bằng cấu hình."
   },
   {
     "stem": "02-trien-khai-vmware",
-    "title": "Mô hình triển khai và mạng VMware NAT",
+    "title": "Mô hình triển khai GNS3 và VMware ba interface",
     "chapter": "Thiết kế triển khai / cấu hình mạng",
-    "caption": "Linux 192.168.73.129 và adapter Windows VMnet8 192.168.73.1 cùng subnet 192.168.73.0/24. Windows dùng SSH TCP 22 để giám sát Linux, đồng thời gửi Telegram qua kết nối Internet của Windows.",
-    "notes": "192.168.73.2 là gateway NAT của Linux, không phải IP máy Windows. Windows và Linux VM nằm trên cùng một máy vật lý; host tắt hoặc ngủ có thể làm VM dừng. Các IP theo thông tin đã cung cấp, có thể đổi khi cấu hình mạng thay đổi."
+    "caption": "Quản trị: Windows VMnet1 .10.1 qua hai Cloud và switch tới Linux VMnet2 .10.129. Mạng thử: NIC gns3test .30.129 qua Cloud VMnet3 tới switch và VPCS .30.10.",
+    "notes": "Windows VMnet2 dùng .20.1 để không có đường .10 trực tiếp. NIC NAT ens33 giữ .73.129/gateway .73.2; hai NIC lab không có gateway. VMware có thể giữ carrier UP khi Cloud mất đường."
   },
   {
     "stem": "03-ca-su-dung",
     "title": "Biểu đồ ca sử dụng",
     "chapter": "Phân tích yêu cầu / tác nhân và chức năng",
-    "caption": "Người quản trị cấu hình, chạy/dừng, xem dashboard và nhận cảnh báo. Linux cung cấp chỉ số; Telegram API chuyển thông báo ra ứng dụng nhắn tin.",
-    "notes": "«include» là chức năng được dùng trong giám sát. «extend» biểu diễn nhánh chỉ phát sinh khi điều kiện thỏa: có chuyển trạng thái cần báo hoặc gửi tin thất bại. Hình tập trung vào ca SSH + Telegram hiện tại."
+    "caption": "Người quản trị cấu hình, chạy/dừng, xem dashboard và nhận cảnh báo. Linux cung cấp chỉ số qua SSH/SNMP; Telegram/Slack chuyển thông báo tới ứng dụng nhắn tin.",
+    "notes": "«include» biểu diễn chức năng trong giám sát; «extend» biểu diễn phát cảnh báo khi đổi trạng thái và retry khi gửi lỗi. GNS3 là hạ tầng đường truyền, không phải nguồn số đo."
   },
   {
     "stem": "04-luong-thu-thap",
     "title": "Lưu đồ thu thập và đánh giá trạng thái",
     "chapter": "Thiết kế thuật toán / vòng giám sát",
-    "caption": "Mỗi chu kỳ mặc định 30 giây, hệ thống thu thập chỉ số, phân biệt lỗi kết nối với lỗi dữ liệu, đánh giá ngưỡng và so sánh trạng thái đã lưu.",
-    "notes": "Tin mới chỉ được tạo khi có chuyển trạng thái cần thông báo. Trạng thái và tin cảnh báo được ghi cùng giao dịch SQLite. Lần đầu mọi chỉ số bình thường không tạo tin thử; chỉ số chủ động tắt không tham gia vòng đánh giá."
+    "caption": "Mỗi chu kỳ theo profile GNS3 5 giây, hệ thống thu thập chỉ số, phân biệt lỗi kết nối với lỗi dữ liệu, đánh giá ngưỡng và so sánh trạng thái đã lưu.",
+    "notes": "Tin mới chỉ được tạo khi có chuyển trạng thái cần thông báo. Trạng thái và tin cảnh báo được ghi cùng giao dịch SQLite. Lần đầu mọi chỉ số bình thường không tạo tin thử; chỉ số chủ động tắt không tham gia vòng đánh giá. Hybrid còn báo mất từng dịch vụ dù nguồn dự phòng hoạt động."
   },
   {
     "stem": "05-luong-gui-canh-bao",

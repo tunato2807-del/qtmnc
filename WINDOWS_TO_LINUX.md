@@ -1,5 +1,10 @@
 # Windows / VS Code giám sát máy ảo Linux
 
+> Tài liệu đường NAT trực tiếp của bản trước. Với dự án GNS3 mới, làm theo
+> [GNS3_LAB.md](docs/GNS3_LAB.md). setup_windows.cmd và run_windows.cmd hiện dùng
+> .env.gns3. Để dùng profile cũ, chạy python setup_project.py --profile classic
+> rồi python monitor_ssh.py --env-file .env.
+
 Máy Windows chạy Python, thu thập CPU/RAM/interface từ Linux qua SSH rồi gửi
 Telegram/Slack. Preset theo mạng hiện tại: Linux 192.168.73.129, user tuanto,
 interface ens33. Nhiệt độ VM được bỏ qua rõ ràng vì thường không có cảm biến.

@@ -109,6 +109,19 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("CẢNH BÁO", text)
         self.assertNotIn("Mức sử dụng", text)
 
+    def test_hybrid_rows_show_partial_failure_sources_and_simulation_label(self):
+        self.config.protocol="hybrid"
+        self.config.temp_enabled=True
+        self.config.temp_source="demo"
+        sample=m.Sample({"cpu":40,"ram":50,"temp":75,"iface":"up","ssh":"down","snmp":"up"},
+                        {"ssh":"SSH unavailable"},
+                        {"cpu":"SNMP","temp":"SNMP / DEMO","iface":"SNMP / IF-MIB"})
+        self.store.observe(self.config,sample,["tg"])
+        self.view.sample_received(sample)
+        text=self.render()
+        for value in ("Kênh SSH","Kênh SNMP","MÔ PHỎNG","SNMP / IF-MIB","DOWN","75.0°C"):
+            self.assertIn(value,text)
+
     def test_logging_redirect_and_cleanup_restore_caller_settings(self):
         logger = logging.getLogger("device_monitor")
         original_handlers, original_level, original_propagate = list(logger.handlers), logger.level, logger.propagate

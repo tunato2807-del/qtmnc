@@ -1,7 +1,7 @@
 flowchart TB
     start(["Bắt đầu chu kỳ kiểm tra"])
-    read["Thu thập chỉ số qua SSH<br/>CPU / RAM / interface<br/>Nhiệt độ nếu đã bật"]
-    connected{"Đường SSH<br/>hoạt động?"}
+    read["Thu thập chỉ số qua SSH/SNMP<br/>CPU / RAM / interface<br/>Nhiệt độ nếu đã bật"]
+    connected{"Có nguồn thu<br/>hoạt động?"}
     parse["Chuẩn hóa dữ liệu<br/>Lỗi từng chỉ số → UNKNOWN"]
     down["Kết nối → DOWN<br/>Không suy diễn chỉ số thành 0"]
     evaluate["So sánh với trạng thái đã lưu<br/>Ngưỡng + hysteresis + mất dữ liệu"]
@@ -9,7 +9,7 @@ flowchart TB
     tx["Một giao dịch SQLite:<br/>lưu trạng thái + thêm outbox từng kênh"]
     state["Lưu trạng thái<br/>Không tạo tin lặp"]
     ui["Cập nhật dashboard<br/>Mất kết nối: đánh dấu số đo cũ"]
-    wait["Chờ mốc chu kỳ tiếp theo<br/>Mặc định 30s; bỏ qua mốc quá trễ"]
+    wait["Chờ mốc chu kỳ tiếp theo<br/>Profile GNS3 5s; bỏ qua mốc quá trễ"]
     start --> read --> connected
     connected -->|"Có"| parse --> evaluate
     connected -->|"Không"| down --> evaluate

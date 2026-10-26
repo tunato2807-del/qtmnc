@@ -5,10 +5,10 @@
  -->
 <!-- Title: G Pages: 1 -->
 <svg width="490pt" height="758pt"
- viewBox="0.00 0.00 489.55 758.40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+ viewBox="0.00 0.00 489.63 758.40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(14.4 744)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-14.4,14.4 -14.4,-744 475.15,-744 475.15,14.4 -14.4,14.4"/>
+<polygon fill="white" stroke="transparent" points="-14.4,14.4 -14.4,-744 475.23,-744 475.23,14.4 -14.4,14.4"/>
 <!-- start -->
 <g id="node1" class="node">
 <title>start</title>
@@ -18,8 +18,8 @@
 <!-- read -->
 <g id="node2" class="node">
 <title>read</title>
-<path fill="#eaf2ff" stroke="#2563eb" stroke-width="1.3" d="M314.5,-659C314.5,-659 125.5,-659 125.5,-659 119.5,-659 113.5,-653 113.5,-647 113.5,-647 113.5,-629 113.5,-629 113.5,-623 119.5,-617 125.5,-617 125.5,-617 314.5,-617 314.5,-617 320.5,-617 326.5,-623 326.5,-629 326.5,-629 326.5,-647 326.5,-647 326.5,-653 320.5,-659 314.5,-659"/>
-<text text-anchor="middle" x="220" y="-641.6" font-family="Noto Sans" font-size="13.00">SSH đọc CPU / RAM / interface</text>
+<path fill="#eaf2ff" stroke="#2563eb" stroke-width="1.3" d="M335,-659C335,-659 105,-659 105,-659 99,-659 93,-653 93,-647 93,-647 93,-629 93,-629 93,-623 99,-617 105,-617 105,-617 335,-617 335,-617 341,-617 347,-623 347,-629 347,-629 347,-647 347,-647 347,-653 341,-659 335,-659"/>
+<text text-anchor="middle" x="220" y="-641.6" font-family="Noto Sans" font-size="13.00">SSH/SNMP đọc CPU / RAM / interface</text>
 <text text-anchor="middle" x="220" y="-627.6" font-family="Noto Sans" font-size="13.00">Nhiệt độ chỉ khi đã bật</text>
 </g>
 <!-- start&#45;&gt;read -->
@@ -31,8 +31,8 @@
 <!-- connected -->
 <g id="node3" class="node">
 <title>connected</title>
-<path fill="#fffbeb" stroke="#d97706" stroke-width="1.3" d="M208.95,-581.31C208.95,-581.31 132.05,-548.69 132.05,-548.69 126.52,-546.34 126.52,-541.66 132.05,-539.31 132.05,-539.31 208.95,-506.69 208.95,-506.69 214.48,-504.34 225.52,-504.34 231.05,-506.69 231.05,-506.69 307.95,-539.31 307.95,-539.31 313.48,-541.66 313.48,-546.34 307.95,-548.69 307.95,-548.69 231.05,-581.31 231.05,-581.31 225.52,-583.66 214.48,-583.66 208.95,-581.31"/>
-<text text-anchor="middle" x="220" y="-547.6" font-family="Noto Sans" font-size="13.00">Đường SSH</text>
+<path fill="#fffbeb" stroke="#d97706" stroke-width="1.3" d="M208.78,-581.75C208.78,-581.75 120.22,-548.25 120.22,-548.25 114.61,-546.12 114.61,-541.88 120.22,-539.75 120.22,-539.75 208.78,-506.25 208.78,-506.25 214.39,-504.12 225.61,-504.12 231.22,-506.25 231.22,-506.25 319.78,-539.75 319.78,-539.75 325.39,-541.88 325.39,-546.12 319.78,-548.25 319.78,-548.25 231.22,-581.75 231.22,-581.75 225.61,-583.88 214.39,-583.88 208.78,-581.75"/>
+<text text-anchor="middle" x="220" y="-547.6" font-family="Noto Sans" font-size="13.00">Có nguồn thu</text>
 <text text-anchor="middle" x="220" y="-533.6" font-family="Noto Sans" font-size="13.00">hoạt động?</text>
 </g>
 <!-- read&#45;&gt;connected -->
@@ -51,8 +51,8 @@
 <!-- connected&#45;&gt;parse -->
 <g id="edge3" class="edge">
 <title>connected&#45;&gt;parse</title>
-<path fill="none" stroke="#64748b" d="M188.34,-515.13C170.58,-499.5 148.62,-480.16 131.42,-465.02"/>
-<polygon fill="#64748b" stroke="#64748b" points="132.66,-462.84 125.78,-460.06 129.42,-466.52 132.66,-462.84"/>
+<path fill="none" stroke="#64748b" d="M187.41,-514.31C169.79,-498.8 148.25,-479.83 131.33,-464.94"/>
+<polygon fill="#64748b" stroke="#64748b" points="132.66,-462.85 125.79,-460.06 129.42,-466.52 132.66,-462.85"/>
 <text text-anchor="middle" x="162" y="-478.2" font-family="Noto Sans" font-size="11.00" fill="#334155">Có</text>
 </g>
 <!-- down -->
@@ -65,9 +65,9 @@
 <!-- connected&#45;&gt;down -->
 <g id="edge4" class="edge">
 <title>connected&#45;&gt;down</title>
-<path fill="none" stroke="#64748b" d="M247.4,-513.39C259.4,-501.02 273.93,-486.8 288,-475 292.28,-471.41 296.92,-467.81 301.59,-464.36"/>
-<polygon fill="#64748b" stroke="#64748b" points="303.26,-466.18 307.49,-460.09 300.38,-462.21 303.26,-466.18"/>
-<text text-anchor="middle" x="305" y="-478.2" font-family="Noto Sans" font-size="11.00" fill="#334155">Không</text>
+<path fill="none" stroke="#64748b" d="M252.49,-514.09C266.18,-501.96 282.32,-487.75 297,-475 300.79,-471.71 304.79,-468.26 308.75,-464.87"/>
+<polygon fill="#64748b" stroke="#64748b" points="310.37,-466.7 314.09,-460.29 307.18,-462.98 310.37,-466.7"/>
+<text text-anchor="middle" x="314" y="-478.2" font-family="Noto Sans" font-size="11.00" fill="#334155">Không</text>
 </g>
 <!-- evaluate -->
 <g id="node6" class="node">
@@ -132,9 +132,9 @@
 <!-- ui -->
 <g id="node10" class="node">
 <title>ui</title>
-<path fill="#eaf2ff" stroke="#2563eb" stroke-width="1.3" d="M308.5,-115C308.5,-115 131.5,-115 131.5,-115 125.5,-115 119.5,-109 119.5,-103 119.5,-103 119.5,-85 119.5,-85 119.5,-79 125.5,-73 131.5,-73 131.5,-73 308.5,-73 308.5,-73 314.5,-73 320.5,-79 320.5,-85 320.5,-85 320.5,-103 320.5,-103 320.5,-109 314.5,-115 308.5,-115"/>
+<path fill="#eaf2ff" stroke="#2563eb" stroke-width="1.3" d="M317,-115C317,-115 123,-115 123,-115 117,-115 111,-109 111,-103 111,-103 111,-85 111,-85 111,-79 117,-73 123,-73 123,-73 317,-73 317,-73 323,-73 329,-79 329,-85 329,-85 329,-103 329,-103 329,-109 323,-115 317,-115"/>
 <text text-anchor="middle" x="220" y="-97.6" font-family="Noto Sans" font-size="13.00">Cập nhật dashboard</text>
-<text text-anchor="middle" x="220" y="-83.6" font-family="Noto Sans" font-size="13.00">Mất SSH: đánh dấu số đo cũ</text>
+<text text-anchor="middle" x="220" y="-83.6" font-family="Noto Sans" font-size="13.00">Mất kết nối: đánh dấu số đo cũ</text>
 </g>
 <!-- tx&#45;&gt;ui -->
 <g id="edge10" class="edge">
@@ -151,8 +151,8 @@
 <!-- wait -->
 <g id="node11" class="node">
 <title>wait</title>
-<path fill="#eaf2ff" stroke="#2563eb" stroke-width="1.3" d="M315.5,-42C315.5,-42 124.5,-42 124.5,-42 118.5,-42 112.5,-36 112.5,-30 112.5,-30 112.5,-12 112.5,-12 112.5,-6 118.5,0 124.5,0 124.5,0 315.5,0 315.5,0 321.5,0 327.5,-6 327.5,-12 327.5,-12 327.5,-30 327.5,-30 327.5,-36 321.5,-42 315.5,-42"/>
-<text text-anchor="middle" x="220" y="-24.6" font-family="Noto Sans" font-size="13.00">Chờ mốc chu kỳ tiếp theo (30s)</text>
+<path fill="#eaf2ff" stroke="#2563eb" stroke-width="1.3" d="M311.5,-42C311.5,-42 128.5,-42 128.5,-42 122.5,-42 116.5,-36 116.5,-30 116.5,-30 116.5,-12 116.5,-12 116.5,-6 122.5,0 128.5,0 128.5,0 311.5,0 311.5,0 317.5,0 323.5,-6 323.5,-12 323.5,-12 323.5,-30 323.5,-30 323.5,-36 317.5,-42 311.5,-42"/>
+<text text-anchor="middle" x="220" y="-24.6" font-family="Noto Sans" font-size="13.00">Chờ mốc chu kỳ tiếp theo (5s)</text>
 <text text-anchor="middle" x="220" y="-10.6" font-family="Noto Sans" font-size="13.00">Bỏ qua mốc quá trễ</text>
 </g>
 <!-- ui&#45;&gt;wait -->
@@ -164,8 +164,8 @@
 <!-- wait&#45;&gt;read -->
 <g id="edge13" class="edge">
 <title>wait&#45;&gt;read</title>
-<path fill="none" stroke="#64748b" d="M275.84,-42C294.87,-50.14 315.69,-60.58 333,-73 369.03,-98.85 380.66,-106.6 401,-146 457.61,-255.68 444.49,-295.21 457,-418 458.89,-436.57 464.11,-442.74 457,-460 426.96,-532.94 396.73,-540.92 332,-586 316.44,-596.83 298.22,-606.28 281.04,-614.01"/>
-<polygon fill="#64748b" stroke="#64748b" points="279.68,-611.93 274.27,-616.99 281.66,-616.41 279.68,-611.93"/>
+<path fill="none" stroke="#64748b" d="M284.62,-42.12C304.15,-49.96 324.92,-60.19 342,-73 375.37,-98.03 383.18,-108.28 401,-146 453.73,-257.6 444.49,-295.21 457,-418 458.89,-436.57 463.71,-442.58 457,-460 429.85,-530.47 404.72,-542.48 343,-586 326.93,-597.33 307.96,-606.76 289.79,-614.31"/>
+<polygon fill="#64748b" stroke="#64748b" points="288.71,-612.1 283.14,-617 290.55,-616.64 288.71,-612.1"/>
 </g>
 </g>
 </svg>

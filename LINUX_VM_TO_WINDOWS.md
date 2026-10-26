@@ -1,5 +1,8 @@
 # Máy ảo Linux giám sát máy thật Windows qua VMware NAT
 
+> Đây là mô hình tham khảo chiều ngược lại. Dự án chính hiện là Windows/VS Code
+> → GNS3 → Linux VMware: xem [GNS3_LAB.md](docs/GNS3_LAB.md).
+
 Mô hình: **Linux VM chạy Python → SSH tới Windows → đọc chỉ số bằng PowerShell**.
 Chính Linux VM gửi thông báo tới Telegram/Slack qua Internet.
 

@@ -61,7 +61,7 @@ def draw_sequence():
     ax.set(xlim=(0, 1), ylim=(0, 1))
     ax.axis("off")
     positions = {"M": .1, "L": .3, "D": .5, "W": .7, "T": .9}
-    titles = {"M": "Windows\nLuồng đo", "L": "Linux\nSSH Server", "D": "SQLite", "W": "Luồng gửi", "T": "Telegram\nBot API"}
+    titles = {"M": "Windows\nLuồng đo", "L": "Linux\nSSH / SNMP", "D": "SQLite", "W": "Luồng gửi", "T": "Telegram\nBot API"}
     for key, x in positions.items():
         ax.plot([x, x], [.025, .92], color="#94a3b8", linewidth=1, linestyle=(0, (4, 4)), zorder=1)
         ax.add_patch(FancyBboxPatch((x-.087, .927), .174, .053, boxstyle="round,pad=0.005",
@@ -153,7 +153,7 @@ def report_pdf(manifest):
     y = paragraph("HỆ THỐNG GIÁM SÁT\nTRẠNG THÁI THIẾT BỊ", 42, y, width-84, title)-20
     y = paragraph("Và gửi cảnh báo qua Telegram / Slack",42,y,width-84,heading)-35
     y = paragraph("BỘ 8 MÔ HÌNH VÀ SƠ ĐỒ THIẾT KẾ",42,y,width-84,heading)-20
-    y = paragraph("Mô hình thực hành: máy thật Windows chạy Python, giám sát máy ảo Linux qua SSH và gửi cảnh báo Telegram.",42,y,width-84)-25
+    y = paragraph("Mô hình thực hành: máy thật Windows chạy Python, qua GNS3 thu chỉ số Linux VMware bằng SSH/SNMP và gửi Telegram/Slack.",42,y,width-84)-25
     y = paragraph("Có ảnh PNG, vector SVG, mã Mermaid và mã nguồn dựng hình. Các kịch bản số đo trong sơ đồ trình tự là minh họa thiết kế.",42,y,width-84)-25
     paragraph("Kho mã: https://github.com/tunato2807-del/qtmnc\nChương trình dùng dashboard Terminal, không phải dashboard web.",42,y,width-84)
     footer(1,"Tài liệu sơ đồ thiết kế • Windows → Linux VM")
@@ -162,15 +162,15 @@ def report_pdf(manifest):
     rows = [
         ["Hạng mục","Cấu hình / ý nghĩa"],
         ["Máy giám sát","Windows • Python • VS Code"],
-        ["Thiết bị đích","Linux VM • 192.168.73.129/24 • ens33"],
-        ["Windows VMnet8","192.168.73.1/24"],
-        ["Gateway NAT của VM","192.168.73.2"],
-        ["Thu thập chính","SSH / TCP 22, kiểm tra host key"],
-        ["Chu kỳ","30 giây mặc định • gần thời gian thực"],
-        ["Kênh đang dùng","Telegram Bot API qua HTTPS / TCP 443"],
-        ["Tùy chọn trong mã","SNMP / UDP 161 và Slack Webhook"],
+        ["Thiết bị đích","Linux VM • gns3mgmt 192.168.10.129/24"],
+        ["Mạng quản trị GNS3","VMnet1 → Cloud → Switch → Cloud VMnet2"],
+        ["Interface thử / NAT","gns3test .30.129; ens33 .73.129, gateway .73.2"],
+        ["Thu thập chính","SSH 22 / SNMP 161 / hybrid, nguồn ưu tiên và dự phòng"],
+        ["Chu kỳ","5 giây theo profile GNS3 • gần thời gian thực"],
+        ["Kênh cảnh báo","Telegram / Slack / cả hai, HTTPS 443"],
+        ["SNMP Linux","Net-SNMP extend JSON + IF-MIB interface"],
         ["CPU / RAM","Cảnh báo >75% / >65%; phục hồi ≤70% / ≤60%"],
-        ["Nhiệt độ","Đang tắt trong demo VM; không giả thành 0°C"],
+        ["Nhiệt độ","Cảm biến thật / UNKNOWN / demo có nhãn MÔ PHỎNG"],
         ["Lưu trữ","SQLite: trạng thái gần nhất và tin chưa gửi"],
     ]
     table_rows = [[Paragraph(escape(v),body) for v in row] for row in rows]
@@ -180,9 +180,9 @@ def report_pdf(manifest):
     table.drawOn(c,36,y-table_height)
     y -= table_height+20
     for text in [
-        "Nét liền: luồng của bản demo chính. Nét đứt vàng: thành phần tùy chọn. Màu xanh lá: lưu trữ hoặc kết quả hợp lệ; màu vàng: quyết định, thiếu dữ liệu hoặc thử lại.",
+        "Nét liền: đường thu thập/gửi tin chính. Nét đứt: đường dự phòng hoặc chú thích. Màu xanh lá: lưu trữ hoặc kết quả hợp lệ; màu vàng: quyết định, thiếu dữ liệu hoặc thử lại.",
         "VM nằm trên cùng host Windows: khi host tắt/ngủ, VM có thể dừng. Muốn phát hiện host tắt hoàn toàn cần máy giám sát độc lập.",
-        "Nguồn đối chiếu: monitor_ssh.py, terminal_ui.py, cấu hình và log được cung cấp. Tài liệu không khẳng định đã thử SNMP/Slack/nhiệt độ trên thiết bị của người dùng.",
+        "Nguồn đối chiếu: device_monitor, lab và profile examples/gns3.env. GUI GNS3/VMware và nhận tin thực tế cần nghiệm thu trên máy người dùng.",
     ]:
         y = paragraph(text,36,y,width-72)-12
     footer(2,"Phạm vi và chú giải")
@@ -234,7 +234,7 @@ def report_docx(manifest):
     doc.add_heading("HỆ THỐNG GIÁM SÁT\nTRẠNG THÁI THIẾT BỊ",0)
     doc.add_heading("Và gửi cảnh báo qua Telegram / Slack",1)
     doc.add_paragraph("BỘ 8 MÔ HÌNH VÀ SƠ ĐỒ THIẾT KẾ")
-    doc.add_paragraph("Mô hình thực hành: Windows chạy Python → Linux VM qua SSH → Telegram.")
+    doc.add_paragraph("Mô hình thực hành: Windows / VS Code → GNS3 → Linux VMware qua SSH/SNMP → Telegram/Slack.")
     doc.add_paragraph("Mã nguồn và bản dựng: https://github.com/tunato2807-del/qtmnc")
     doc.add_paragraph("Các hình có PNG để chèn nhanh, SVG để phóng to, Mermaid và mã nguồn để chỉnh sửa.")
     doc.add_page_break()
@@ -245,19 +245,19 @@ def report_docx(manifest):
     table.rows[0].cells[1].text="Giá trị"
     for key,value in [
         ("Máy giám sát","Windows / Python / VS Code"),
-        ("Máy đích","Linux VM: 192.168.73.129, interface ens33"),
-        ("VMnet8 / gateway VM","192.168.73.1 / 192.168.73.2"),
-        ("Thu thập / chu kỳ","SSH TCP 22 / 30 giây"),
-        ("Cảnh báo","Telegram HTTPS 443; Slack là tùy chọn"),
+        ("Máy đích","Linux VM: quản trị .10.129, interface thử gns3test .30.129"),
+        ("Mạng quản trị","Cloud VMnet1 → SW-MANAGEMENT → Cloud VMnet2"),
+        ("Thu thập / chu kỳ","SSH 22 / SNMP 161 / hybrid, chu kỳ 5 giây"),
+        ("Cảnh báo","Telegram / Slack / cả hai, HTTPS 443"),
         ("Ngưỡng CPU","Cảnh báo >75%, phục hồi ≤70%"),
         ("Ngưỡng RAM","Cảnh báo >65%, phục hồi ≤60%"),
-        ("Nhiệt độ","Đang tắt trong demo VM"),
-        ("Tùy chọn","SNMP UDP 161; chưa xác minh trong demo"),
+        ("Nhiệt độ","Cảm biến / UNKNOWN; demo luôn có nhãn MÔ PHỎNG"),
+        ("NAT dự phòng","ens33 .73.129; gateway .73.2"),
         ("Dữ liệu","Trạng thái gần nhất + outbox SQLite"),
     ]:
         row=table.add_row().cells
         row[0].text,row[1].text=key,value
-    doc.add_paragraph("Nét đứt vàng biểu diễn phần tùy chọn. Kịch bản RAM trong hình trình tự là minh họa, không phải bản ghi một phép thử đã được xác nhận.")
+    doc.add_paragraph("Đường quản trị và interface thử nghiệm tách biệt. Kịch bản RAM trong hình trình tự là minh họa, không phải bản ghi một phép thử đã được xác nhận.")
     doc.add_paragraph("Nếu Windows host tắt hoặc ngủ, Linux VM có thể dừng. Muốn giám sát tính sẵn sàng của host cần máy giám sát độc lập.")
     for i,item in enumerate(manifest,1):
         image=ROOT/"png"/(item["stem"]+".png")

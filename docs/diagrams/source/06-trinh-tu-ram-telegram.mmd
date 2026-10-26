@@ -4,7 +4,7 @@ sequenceDiagram
     participant L as Linux / SSH
     participant D as SQLite
     participant W as Luồng gửi
-    participant T as Telegram API
+    participant T as Telegram / Slack API
     M->>L: Đọc CPU, RAM, interface
     L-->>M: RAM = 70%
     Note over M,D: Ngưỡng RAM 65%, trạng thái trước là OK

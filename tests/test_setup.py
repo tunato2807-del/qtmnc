@@ -13,6 +13,7 @@ from unittest.mock import patch
 from dotenv import dotenv_values
 
 import monitor_ssh as m
+import device_monitor.config as config_module
 import setup_project as s
 import test_integration as fixtures
 
@@ -104,13 +105,29 @@ class SetupTests(unittest.TestCase):
 
     def test_default_profile_preserves_intentional_command_level_overrides(self):
         s.save_settings(self.file, self.settings())
-        with patch.object(m, "__file__", str(self.root / "monitor_ssh.py")), patch.dict(os.environ, {"RAM_THRESHOLD": "0", "RECOVERY_MARGIN": "0"}, clear=True):
+        with patch.object(config_module, "ROOT", self.root), patch.dict(os.environ, {"RAM_THRESHOLD": "0", "RECOVERY_MARGIN": "0"}, clear=True):
             m.load_environment_file()
             self.assertEqual(m.Config.from_env().thresholds["ram"], 0)
 
     def test_missing_explicit_profile_is_an_error(self):
         with self.assertRaises(m.ConfigError):
             m.load_environment_file(self.file)
+
+    def test_auth_choice_reprompts_without_echoing_accidentally_typed_password(self):
+        with patch("builtins.input",side_effect=["accidental-secret","password"]), redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(s.choose("Xác thực",("password","key","agent"),"password"),"password")
+        self.assertNotIn("accidental-secret",out.getvalue())
+
+    def test_gns3_wizard_creates_separate_profile_and_keeps_gns3_defaults(self):
+        def ask(label,default=""):
+            return "1000" if label=="Telegram chat ID" else default
+        def secret(label,previous=""):
+            return "123:fake_local_bot" if label.startswith("Token") else "local-fixture-password"
+        with patch.object(s,"ask",side_effect=ask), patch.object(s,"ask_secret",side_effect=secret), redirect_stdout(io.StringIO()):
+            s.configure(self.file,s.ROOT/"examples/gns3.env")
+        c=m.Config.from_env(dotenv_values(self.file,interpolate=False))
+        self.assertEqual((c.host,c.iface,c.interval),("192.168.10.129","gns3test",5))
+        self.assertEqual(c.snmp_profile,"linux-extend")
 
     def test_reads_utf8_bom_profiles(self):
         self.file.write_text("MONITOR_HOST='192.168.73.129'\n", encoding="utf-8-sig")
@@ -173,6 +190,14 @@ class SetupSSHTests(unittest.TestCase):
                 with self.assertRaises(fixtures.paramiko.SSHException):
                     s.verify_ssh(self.config(port, known))
             self.assertFalse(known.exists())
+
+    def test_full_ssh_keygen_line_is_accepted_without_trusting_a_different_key(self):
+        with tempfile.TemporaryDirectory() as directory, fixtures.ssh_device() as (port,key):
+            known=Path(directory)/"known_hosts"
+            fingerprint="SHA256:"+base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode().rstrip("=")
+            with patch("builtins.input",return_value=f"2048 {fingerprint} root@fixture (RSA)"), redirect_stdout(io.StringIO()):
+                s.verify_ssh(self.config(port,known))
+            self.assertTrue(known.is_file())
 
     def test_existing_matching_key_reused_without_prompt(self):
         with tempfile.TemporaryDirectory() as directory, fixtures.ssh_device() as (port, key):

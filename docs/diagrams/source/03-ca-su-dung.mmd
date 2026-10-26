@@ -1,12 +1,12 @@
 flowchart LR
     admin["«actor»<br/>Người quản trị"]
-    linux["«hệ thống ngoài»<br/>Linux / OpenSSH"]
-    telegram["«hệ thống ngoài»<br/>Telegram API"]
+    linux["«hệ thống ngoài»<br/>Linux / SSH + SNMP"]
+    telegram["«hệ thống ngoài»<br/>Telegram / Slack API"]
     subgraph system["HỆ THỐNG GIÁM SÁT VÀ CẢNH BÁO"]
         config(["Cấu hình thiết bị<br/>ngưỡng và kênh nhận tin"])
         monitor(["Khởi chạy / dừng<br/>giám sát định kỳ"])
         view(["Xem trạng thái<br/>và hàng đợi cảnh báo"])
-        collect(["Thu thập chỉ số<br/>qua SSH"])
+        collect(["Thu thập chỉ số<br/>qua SSH/SNMP"])
         evaluate(["Đánh giá ngưỡng<br/>và chuyển trạng thái"])
         persist(["Lưu trạng thái<br/>và tin chưa gửi"])
         notify(["Phát cảnh báo<br/>và thông báo phục hồi"])

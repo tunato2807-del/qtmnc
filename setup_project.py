@@ -7,6 +7,7 @@ import base64
 import getpass
 import hashlib
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -29,6 +30,15 @@ def ask_secret(label, previous=""):
     note = " (Enter để giữ giá trị đã lưu)" if previous else ""
     return getpass.getpass(label + note + ": ") or previous
 
+def choose(label,options,default):
+    while True:
+        value=ask(label,default).lower()
+        if value in options:
+            return value
+        if value.isdigit() and 1<=int(value)<=len(options):
+            return options[int(value)-1]
+        print("Chỉ chọn: "+", ".join(options)+". Enter để giữ mặc định; mật khẩu nhập ở ô tiếp theo.")
+
 
 def save_settings(path, updates):
     """Preserve comments/unknown keys; replace the complete file atomically."""
@@ -49,18 +59,16 @@ def save_settings(path, updates):
         Path(temporary).unlink(missing_ok=True)
 
 
-def configure(path):
+def configure(path,preset=None):
     from dotenv import dotenv_values
     from monitor_ssh import Config, ConfigError
     path = Path(path)
-    source = path if path.exists() else ROOT / "examples/windows-to-linux.env"
+    source = path if path.exists() else preset if preset is not None else ROOT / "examples/windows-to-linux.env"
     saved = {k: v for k, v in dotenv_values(source, interpolate=False, encoding="utf-8-sig").items() if v is not None}
-    if saved.get("MONITOR_PROTOCOL", "ssh") != "ssh":
-        raise SetupError("Bộ hướng dẫn này dành cho SSH; hãy giữ/chỉnh profile SNMP riêng")
     values = dict(saved)
-    print("\nBộ cài SSH. Mặc định: Windows chạy Python giám sát Linux VM.")
-    print("Secret chỉ lưu cục bộ trong .env; không gửi lên GitHub.")
-    values["MONITOR_PROTOCOL"] = "ssh"
+    print("\nGNS3 Device Monitor: Windows/VS Code giám sát Linux qua SSH/SNMP.")
+    print(f"Secret chỉ lưu cục bộ trong {path.name}; không gửi lên GitHub.")
+    values["MONITOR_PROTOCOL"] = choose("Giao thức: ssh/snmp/hybrid",("ssh","snmp","hybrid"),saved.get("MONITOR_PROTOCOL","ssh"))
     target = ask("Hệ điều hành máy đích: linux/windows", saved.get("MONITOR_OS", "linux")).lower()
     if target not in {"linux", "windows"}:
         raise SetupError("Hệ điều hành phải là linux hoặc windows")
@@ -71,10 +79,12 @@ def configure(path):
     values["MONITOR_IFACE"] = ask("Tên interface trên máy đích", saved.get("MONITOR_IFACE", "ens33" if target == "linux" else "Wi-Fi"))
     enabled = ask("Giám sát nhiệt độ? true/false", saved.get("MONITOR_TEMP_ENABLED", "false")).lower()
     values["MONITOR_TEMP_ENABLED"] = enabled
+    if enabled=="true":
+        values["TEMP_SOURCE"]=choose("Nguồn nhiệt độ: auto/demo (demo luôn ghi nhãn MÔ PHỎNG)",("auto","demo"),saved.get("TEMP_SOURCE","auto"))
     if target == "windows":
         values["MONITOR_TEMP_PATH"] = ""
     auth_default = "key" if saved.get("SSH_KEY_FILE") else ("password" if saved.get("SSH_PASSWORD") or not path.exists() else "agent")
-    auth = ask("Xác thực SSH: password/key/agent", auth_default).lower()
+    auth = choose("Xác thực SSH: password/key/agent",("password","key","agent"),auth_default) if values["MONITOR_PROTOCOL"]!="snmp" else "agent"
     if auth == "password":
         values["SSH_PASSWORD"] = ask_secret("Mật khẩu SSH", saved.get("SSH_PASSWORD", ""))
         if not values["SSH_PASSWORD"]:
@@ -90,6 +100,16 @@ def configure(path):
     else:
         raise SetupError("Xác thực phải là password, key hoặc agent")
     values.setdefault("SSH_KNOWN_HOSTS", "~/.ssh/known_hosts")
+    if values["MONITOR_PROTOCOL"] in {"snmp","hybrid"}:
+        values["SNMP_PROFILE"]=saved.get("SNMP_PROFILE","linux-extend")
+        values["SNMP_PORT"]=ask("Cổng SNMP",saved.get("SNMP_PORT","161"))
+        values["SNMP_VERSION"]=choose("SNMP: 2c (lab tách biệt) / 3 (authPriv)",("2c","3"),saved.get("SNMP_VERSION","2c"))
+        if values["SNMP_VERSION"]=="2c":
+            values["SNMP_COMMUNITY"]=ask_secret("Community read-only đã cấu hình trên Linux",saved.get("SNMP_COMMUNITY",""))
+        else:
+            values["SNMP_USER"]=ask("SNMPv3 username",saved.get("SNMP_USER",""))
+            values["SNMP_AUTH_KEY"]=ask_secret("SNMPv3 SHA auth key",saved.get("SNMP_AUTH_KEY",""))
+            values["SNMP_PRIV_KEY"]=ask_secret("SNMPv3 AES privacy key",saved.get("SNMP_PRIV_KEY",""))
     has_tg, has_slack = bool(saved.get("TELEGRAM_TOKEN")), bool(saved.get("SLACK_WEBHOOK_URL"))
     default_channel = "both" if has_tg and has_slack else ("slack" if has_slack else "telegram")
     channel = ask("Kênh cảnh báo: telegram/slack/both", default_channel).lower()
@@ -127,8 +147,9 @@ def verify_ssh(config):
                 print("Nếu key trên đây không phải ED25519, kiểm tra file public key cùng loại trong /etc/ssh.")
             else:
                 print("Lấy fingerprint đúng loại key trực tiếp trên Windows trong C:\\ProgramData\\ssh.")
-            entered = input("Dán fingerprint SHA256 lấy trực tiếp từ máy đích (bỏ trống để dừng): ").strip()
-            if entered != fingerprint:
+            entered = input("Dán fingerprint hoặc cả dòng ssh-keygen lấy từ console Linux (bỏ trống để dừng): ").strip()
+            found=re.findall(r"SHA256:[A-Za-z0-9+/]{43}=?",entered)
+            if len(found)!=1 or found[0].rstrip("=") != fingerprint:
                 raise paramiko.SSHException("Fingerprint chưa được xác minh")
             client.get_host_keys().add(hostname, key.get_name(), key)
             added = True
@@ -177,24 +198,27 @@ def install_dependencies(root=ROOT):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--configure", action="store_true", help="Chỉnh lại cấu hình đã lưu")
-    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
+    parser.add_argument("--profile", choices=("classic","gns3"),default="classic")
+    parser.add_argument("--env-file", type=Path)
     parser.add_argument("--skip-ssh-check", action="store_true", help="Chỉ chuẩn bị cấu hình; chưa xác minh SSH")
     parser.add_argument("--finish", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if args.env_file is None:
+        args.env_file=ROOT/(".env.gns3" if args.profile=="gns3" else ".env")
     if sys.version_info < (3, 10):
         print("Cần Python 3.10 trở lên.", file=sys.stderr)
         return 2
     try:
         if not args.finish:
             python = install_dependencies()
-            command = [str(python), str(ROOT / "setup_project.py"), "--finish", "--env-file", str(args.env_file.absolute())]
+            command = [str(python), str(ROOT / "setup_project.py"), "--finish", "--profile",args.profile,"--env-file", str(args.env_file.absolute())]
             if args.configure:
                 command.append("--configure")
             if args.skip_ssh_check:
                 command.append("--skip-ssh-check")
             return subprocess.call(command, cwd=ROOT)
         if args.configure or not args.env_file.exists():
-            configure(args.env_file)
+            configure(args.env_file,ROOT/"examples/gns3.env" if args.profile=="gns3" else None)
         else:
             print("Giữ cấu hình đã có. Dùng --configure nếu muốn thay đổi.")
         from monitor_ssh import Config, ConfigError, load_environment_file
@@ -203,11 +227,12 @@ def main(argv=None):
             config = Config.from_env()
         except ConfigError as exc:
             raise SetupError(str(exc)) from None
-        if config.protocol != "ssh":
-            raise SetupError("Bộ cài này dành cho SSH; profile SNMP được giữ nguyên")
         if not args.skip_ssh_check:
-            verify_ssh(config)
+            if config.protocol in {"ssh","hybrid"}:
+                verify_ssh(config)
             subprocess.run([sys.executable, str(ROOT / "monitor_ssh.py"), "--env-file", str(args.env_file), "--check-config"], check=True, cwd=ROOT)
+            if config.protocol in {"snmp","hybrid"}:
+                print("Chưa đo thử SNMP. Chạy --once để kiểm tra agent, community/user và UDP thực tế.")
         else:
             print("Chưa kiểm tra kết nối, host key hoặc đăng nhập SSH.")
         print("\nĐã hoàn tất bước chuẩn bị. Trên Windows chạy: .\\run_windows.cmd")

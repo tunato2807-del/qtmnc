@@ -2,9 +2,11 @@
 
 **Đề tài:** Hệ thống giám sát trạng thái thiết bị và gửi cảnh báo qua Telegram/Slack.
 
-Bộ hình được đối chiếu với mã hiện tại: Windows chạy Python, giám sát Linux VM
-192.168.73.129 qua SSH và gửi Telegram. SNMP/Slack là phần tùy chọn có mã hỗ trợ;
-nhiệt độ đang tắt trong demo VM. Chu kỳ mặc định 30 giây là gần thời gian thực.
+Bộ hình theo kiến trúc GNS3: Windows/VS Code → Cloud VMnet1 → switch →
+Cloud VMnet2 → Linux VMware 192.168.10.129. Interface gns3test .30.129 được
+thử riêng; NIC NAT .73.129 giữ đường cứu hộ. Hỗ trợ SSH/SNMP/hybrid,
+Telegram/Slack; profile GNS3 5 giây. Nhiệt độ demo luôn ghi MÔ PHỎNG.
+Triển khai theo [hướng dẫn chi tiết](../GNS3_LAB.md).
 
 ## Tệp dùng ngay
 
@@ -21,7 +23,7 @@ nhiệt độ đang tắt trong demo VM. Chu kỳ mặc định 30 giây là g�
 | Hình | Sơ đồ | Chương gợi ý | Tệp |
 |---|---|---|---|
 | 1 | Kiến trúc tổng thể hệ thống | Tổng quan / kiến trúc hệ thống | [PNG](png/01-kien-truc-tong-the.png) · [SVG](svg/01-kien-truc-tong-the.svg) · [Mermaid](source/01-kien-truc-tong-the.mmd) |
-| 2 | Mô hình triển khai và mạng VMware NAT | Thiết kế triển khai / cấu hình mạng | [PNG](png/02-trien-khai-vmware.png) · [SVG](svg/02-trien-khai-vmware.svg) · [Mermaid](source/02-trien-khai-vmware.mmd) |
+| 2 | Mô hình triển khai GNS3 và VMware ba interface | Thiết kế triển khai / cấu hình mạng | [PNG](png/02-trien-khai-vmware.png) · [SVG](svg/02-trien-khai-vmware.svg) · [Mermaid](source/02-trien-khai-vmware.mmd) |
 | 3 | Biểu đồ ca sử dụng | Phân tích yêu cầu / tác nhân và chức năng | [PNG](png/03-ca-su-dung.png) · [SVG](svg/03-ca-su-dung.svg) · [Mermaid](source/03-ca-su-dung.mmd) |
 | 4 | Lưu đồ thu thập và đánh giá trạng thái | Thiết kế thuật toán / vòng giám sát | [PNG](png/04-luong-thu-thap.png) · [SVG](svg/04-luong-thu-thap.svg) · [Mermaid](source/04-luong-thu-thap.mmd) |
 | 5 | Lưu đồ hàng đợi, gửi tin và thử lại | Thiết kế thuật toán / độ tin cậy cảnh báo | [PNG](png/05-luong-gui-canh-bao.png) · [SVG](svg/05-luong-gui-canh-bao.svg) · [Mermaid](source/05-luong-gui-canh-bao.mmd) |
@@ -35,11 +37,11 @@ nhiệt độ đang tắt trong demo VM. Chu kỳ mặc định 30 giây là g�
 
 ## Những điểm cần trình bày chính xác
 
-1. Windows là máy giám sát; Linux VM là thiết bị đích. IP máy đích là 192.168.73.129,
-   không phải IP adapter Windows 192.168.73.1 hoặc gateway NAT 192.168.73.2.
+1. Windows là máy giám sát; Linux VM là thiết bị đích .10.129 qua GNS3.
+   .73.129 chỉ là NAT dự phòng; không dùng nó để chứng minh đường GNS3.
 2. Vòng thu thập và luồng gửi độc lập. Một luồng gửi duyệt tuần tự các kênh,
    không phải mỗi kênh là một tiến trình gửi song song.
-3. Vượt ngưỡng không tạo tin liên tục mỗi 30 giây. Tin phát khi có chuyển trạng
+3. Vượt ngưỡng không tạo tin liên tục mỗi 5 giây. Tin phát khi có chuyển trạng
    thái cần báo; RAM >65% cảnh báo và chỉ phục hồi khi ≤60% với biên mặc định 5.
 4. Thiếu dữ liệu là UNKNOWN, không phải 0 hoặc đã bình thường. Giữ last_known
    qua giai đoạn thiếu dữ liệu để tránh mất trạng thái hysteresis.

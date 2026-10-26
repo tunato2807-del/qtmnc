@@ -1,27 +1,11 @@
-flowchart TB
-    subgraph physical["MỘT MÁY VẬT LÝ: WINDOWS + VMWARE"]
-        subgraph windows["WINDOWS HOST"]
-            monitor["Python + VS Code<br/>Chạy script giám sát"]
-            vmnet8["Adapter VMnet8<br/>192.168.73.1/24"]
-            wifi["Wi-Fi Windows<br/>192.168.1.227/24"]
-        end
-        subgraph nat["MẠNG NAT VMNET8: 192.168.73.0/24"]
-            linux["LINUX VM • ens33<br/>192.168.73.129/24<br/>OpenSSH Server • TCP 22"]
-            gateway["VMware NAT Gateway<br/>192.168.73.2"]
-        end
-        monitor -->|"SSH: gửi lệnh"| vmnet8
-        vmnet8 <-->|"Kết nối nội bộ cùng subnet"| linux
-        linux -->|"Default route của Linux"| gateway
-        gateway -. "Đường Internet của VM" .-> wifi
-        monitor -->|"Đường gửi Telegram của Windows"| wifi
-    end
-    router["Router LAN<br/>192.168.1.1"]
-    internet["Internet"]
-    api["Telegram API<br/>api.telegram.org • HTTPS 443"]
-    wifi --> router --> internet --> api
-    classDef host fill:#eaf2ff,stroke:#2563eb,color:#0f172a;
-    classDef vm fill:#ecfdf5,stroke:#059669,color:#064e3b;
-    classDef network fill:#f1f5f9,stroke:#64748b,color:#0f172a;
-    class monitor,vmnet8,wifi host;
-    class linux vm;
-    class gateway,router,internet network;
+flowchart LR
+  W["Windows: VS Code + Python<br/>VMnet1: 192.168.10.1"] --> C1["Cloud WINDOWS-VMNET1"]
+  C1 --- S1["SW-MANAGEMENT"]
+  S1 --- C2["Cloud LINUX-MGMT-VMNET2"]
+  C2 --- L["Ubuntu NIC2: gns3mgmt<br/>192.168.10.129/24<br/>SSH 22 / SNMP 161"]
+  L --- T["Ubuntu NIC3: gns3test<br/>192.168.30.129/24"]
+  T --- C3["Cloud LINUX-DATA-VMNET3"]
+  C3 --- S2["SW-TEST"]
+  S2 --- V["VPCS-TEST<br/>192.168.30.10/24"]
+  W --> M["Telegram / Slack qua Internet"]
+  L -. "NIC1 ens33: NAT, tải gói/cứu hộ" .-> N["VMnet8: 192.168.73.129<br/>gateway 192.168.73.2"]

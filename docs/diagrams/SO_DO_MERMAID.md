@@ -1,98 +1,73 @@
-# Sơ đồ Mermaid
-
-Các hình mô tả mô hình Windows giám sát Linux qua SSH. Phần tùy chọn và giới hạn được nêu trong README và chú thích từng hình.
+# Bộ sơ đồ Mermaid — GNS3 Device Monitor
 
 ## Hình 1. Kiến trúc tổng thể hệ thống
 
-Windows chạy Python để thu thập từ Linux VM, đánh giá trạng thái, lưu SQLite và gửi cảnh báo bằng luồng riêng. SNMP là phương án thu thập thay thế; Slack là kênh gửi tùy chọn.
-
-```mermaid
-flowchart LR
-    admin["Người quản trị"]
-    subgraph pc["MÁY THẬT WINDOWS"]
-        env["Cấu hình .env<br/>Không đưa secret vào mã"]
-        core["Python monitor_ssh.py<br/>Lập lịch + đánh giá trạng thái"]
-        ui["Dashboard Terminal<br/>CPU / RAM / interface"]
-        db[("SQLite<br/>Trạng thái + outbox")]
-        sender["Luồng gửi cảnh báo<br/>Retry + xác nhận API"]
-        env --> core
-        core --> ui
-        core <--> db
-        db --> sender
-    end
-    linux["MÁY ẢO LINUX<br/>192.168.73.129<br/>OpenSSH Server"]
-    agent["SNMP agent / thiết bị hỗ trợ<br/>Tùy chọn; chưa xác minh trong demo"]
-    telegram["Telegram Bot API"]
-    slack["Slack Incoming Webhook<br/>Tùy chọn"]
-    app["Ứng dụng nhắn tin<br/>Người quản trị nhận cảnh báo"]
-    admin -->|"Cấu hình / khởi chạy / xem"| core
-    core -->|"SSH • TCP 22<br/>Đọc chỉ số mỗi 30 giây"| linux
-    linux -->|"Kết quả lệnh"| core
-    core -. "SNMP • UDP 161<br/>Phương án thay thế SSH" .-> agent
-    sender -->|"HTTPS • TCP 443"| telegram
-    sender -. "HTTPS • TCP 443" .-> slack
-    telegram --> app
-    slack -.-> app
-    classDef primary fill:#eaf2ff,stroke:#2563eb,color:#0f172a;
-    classDef storage fill:#ecfdf5,stroke:#059669,color:#064e3b;
-    classDef optional fill:#fffbeb,stroke:#d97706,stroke-dasharray:6 4,color:#78350f;
-    class core,linux,telegram,ui primary;
-    class db storage;
-    class agent,slack optional;
-```
-
-Luồng liền mô tả mô hình SSH + Telegram đang triển khai. Nét đứt màu vàng là phần tùy chọn đã có trong mã, chưa được xác minh trên môi trường demo của người dùng.
-
-## Hình 2. Mô hình triển khai và mạng VMware NAT
-
-Linux 192.168.73.129 và adapter Windows VMnet8 192.168.73.1 cùng subnet 192.168.73.0/24. Windows dùng SSH TCP 22 để giám sát Linux, đồng thời gửi Telegram qua kết nối Internet của Windows.
+Windows chạy Python, thu chỉ số Linux qua đường GNS3 bằng SSH/SNMP hoặc hybrid, đánh giá trạng thái, lưu SQLite và gửi Telegram/Slack bằng luồng riêng.
 
 ```mermaid
 flowchart TB
-    subgraph physical["MỘT MÁY VẬT LÝ: WINDOWS + VMWARE"]
-        subgraph windows["WINDOWS HOST"]
-            monitor["Python + VS Code<br/>Chạy script giám sát"]
-            vmnet8["Adapter VMnet8<br/>192.168.73.1/24"]
-            wifi["Wi-Fi Windows<br/>192.168.1.227/24"]
-        end
-        subgraph nat["MẠNG NAT VMNET8: 192.168.73.0/24"]
-            linux["LINUX VM • ens33<br/>192.168.73.129/24<br/>OpenSSH Server • TCP 22"]
-            gateway["VMware NAT Gateway<br/>192.168.73.2"]
-        end
-        monitor -->|"SSH: gửi lệnh"| vmnet8
-        vmnet8 <-->|"Kết nối nội bộ cùng subnet"| linux
-        linux -->|"Default route của Linux"| gateway
-        gateway -. "Đường Internet của VM" .-> wifi
-        monitor -->|"Đường gửi Telegram của Windows"| wifi
+    admin["Người quản trị"]
+    subgraph win["WINDOWS — VS CODE / PYTHON"]
+      env[".env.gns3 + known_hosts"]
+      app["device_monitor<br/>Lập lịch 5s + trạng thái"]
+      collectors["SSH / SNMP / HYBRID"]
+      ui["Dashboard: chỉ số, nguồn và trạng thái"]
+      db[("SQLite: states + outbox")]
+      sender["Luồng gửi: retry và xác nhận API"]
+      env --> app --> collectors
+      app --> ui
+      app --> db --> sender
     end
-    router["Router LAN<br/>192.168.1.1"]
-    internet["Internet"]
-    api["Telegram API<br/>api.telegram.org • HTTPS 443"]
-    wifi --> router --> internet --> api
-    classDef host fill:#eaf2ff,stroke:#2563eb,color:#0f172a;
-    classDef vm fill:#ecfdf5,stroke:#059669,color:#064e3b;
-    classDef network fill:#f1f5f9,stroke:#64748b,color:#0f172a;
-    class monitor,vmnet8,wifi host;
-    class linux vm;
-    class gateway,router,internet network;
+    gns["GNS3 local Windows<br/>Cloud VMnet1 ↔ Switch ↔ Cloud VMnet2"]
+    linux["Ubuntu VM: 192.168.10.129<br/>OpenSSH + Net-SNMP extend / IF-MIB"]
+    temp["Nhiệt: auto → cảm biến / UNKNOWN<br/>demo luôn có nhãn MÔ PHỎNG"]
+    tg["Telegram Bot API"]
+    slack["Slack Incoming Webhook"]
+    receiver["Ứng dụng nhận cảnh báo / phục hồi"]
+    admin --> env
+    collectors <-->|"SSH 22 / SNMP 161"| gns
+    gns <--> linux
+    linux -.- temp
+    sender -->|"HTTPS"| tg --> receiver
+    sender -->|"HTTPS"| slack --> receiver
 ```
 
-192.168.73.2 là gateway NAT của Linux, không phải IP máy Windows. Windows và Linux VM nằm trên cùng một máy vật lý; host tắt hoặc ngủ có thể làm VM dừng. Các IP theo thông tin đã cung cấp, có thể đổi khi cấu hình mạng thay đổi.
+Profile GNS3 lấy mẫu mỗi 5 giây. Nhiệt độ VM có thể UNKNOWN; nguồn demo phải ghi MÔ PHỎNG. Các kênh và giao thức được chọn bằng cấu hình.
+
+## Hình 2. Mô hình triển khai GNS3 và VMware ba interface
+
+Quản trị: Windows VMnet1 .10.1 qua hai Cloud và switch tới Linux VMnet2 .10.129. Mạng thử: NIC gns3test .30.129 qua Cloud VMnet3 tới switch và VPCS .30.10.
+
+```mermaid
+flowchart LR
+  W["Windows: VS Code + Python<br/>VMnet1: 192.168.10.1"] --> C1["Cloud WINDOWS-VMNET1"]
+  C1 --- S1["SW-MANAGEMENT"]
+  S1 --- C2["Cloud LINUX-MGMT-VMNET2"]
+  C2 --- L["Ubuntu NIC2: gns3mgmt<br/>192.168.10.129/24<br/>SSH 22 / SNMP 161"]
+  L --- T["Ubuntu NIC3: gns3test<br/>192.168.30.129/24"]
+  T --- C3["Cloud LINUX-DATA-VMNET3"]
+  C3 --- S2["SW-TEST"]
+  S2 --- V["VPCS-TEST<br/>192.168.30.10/24"]
+  W --> M["Telegram / Slack qua Internet"]
+  L -. "NIC1 ens33: NAT, tải gói/cứu hộ" .-> N["VMnet8: 192.168.73.129<br/>gateway 192.168.73.2"]
+```
+
+Windows VMnet2 dùng .20.1 để không có đường .10 trực tiếp. NIC NAT ens33 giữ .73.129/gateway .73.2; hai NIC lab không có gateway. VMware có thể giữ carrier UP khi Cloud mất đường.
 
 ## Hình 3. Biểu đồ ca sử dụng
 
-Người quản trị cấu hình, chạy/dừng, xem dashboard và nhận cảnh báo. Linux cung cấp chỉ số; Telegram API chuyển thông báo ra ứng dụng nhắn tin.
+Người quản trị cấu hình, chạy/dừng, xem dashboard và nhận cảnh báo. Linux cung cấp chỉ số qua SSH/SNMP; Telegram/Slack chuyển thông báo tới ứng dụng nhắn tin.
 
 ```mermaid
 flowchart LR
     admin["«actor»<br/>Người quản trị"]
-    linux["«hệ thống ngoài»<br/>Linux / OpenSSH"]
-    telegram["«hệ thống ngoài»<br/>Telegram API"]
+    linux["«hệ thống ngoài»<br/>Linux / SSH + SNMP"]
+    telegram["«hệ thống ngoài»<br/>Telegram / Slack API"]
     subgraph system["HỆ THỐNG GIÁM SÁT VÀ CẢNH BÁO"]
         config(["Cấu hình thiết bị<br/>ngưỡng và kênh nhận tin"])
         monitor(["Khởi chạy / dừng<br/>giám sát định kỳ"])
         view(["Xem trạng thái<br/>và hàng đợi cảnh báo"])
-        collect(["Thu thập chỉ số<br/>qua SSH"])
+        collect(["Thu thập chỉ số<br/>qua SSH/SNMP"])
         evaluate(["Đánh giá ngưỡng<br/>và chuyển trạng thái"])
         persist(["Lưu trạng thái<br/>và tin chưa gửi"])
         notify(["Phát cảnh báo<br/>và thông báo phục hồi"])
@@ -115,17 +90,17 @@ flowchart LR
     class config,monitor,view,collect,evaluate,persist,notify,retry uc;
 ```
 
-«include» là chức năng được dùng trong giám sát. «extend» biểu diễn nhánh chỉ phát sinh khi điều kiện thỏa: có chuyển trạng thái cần báo hoặc gửi tin thất bại. Hình tập trung vào ca SSH + Telegram hiện tại.
+«include» biểu diễn chức năng trong giám sát; «extend» biểu diễn phát cảnh báo khi đổi trạng thái và retry khi gửi lỗi. GNS3 là hạ tầng đường truyền, không phải nguồn số đo.
 
 ## Hình 4. Lưu đồ thu thập và đánh giá trạng thái
 
-Mỗi chu kỳ mặc định 30 giây, hệ thống thu thập chỉ số, phân biệt lỗi kết nối với lỗi dữ liệu, đánh giá ngưỡng và so sánh trạng thái đã lưu.
+Mỗi chu kỳ theo profile GNS3 5 giây, hệ thống thu thập chỉ số, phân biệt lỗi kết nối với lỗi dữ liệu, đánh giá ngưỡng và so sánh trạng thái đã lưu.
 
 ```mermaid
 flowchart TB
     start(["Bắt đầu chu kỳ kiểm tra"])
-    read["Thu thập chỉ số qua SSH<br/>CPU / RAM / interface<br/>Nhiệt độ nếu đã bật"]
-    connected{"Đường SSH<br/>hoạt động?"}
+    read["Thu thập chỉ số qua SSH/SNMP<br/>CPU / RAM / interface<br/>Nhiệt độ nếu đã bật"]
+    connected{"Có nguồn thu<br/>hoạt động?"}
     parse["Chuẩn hóa dữ liệu<br/>Lỗi từng chỉ số → UNKNOWN"]
     down["Kết nối → DOWN<br/>Không suy diễn chỉ số thành 0"]
     evaluate["So sánh với trạng thái đã lưu<br/>Ngưỡng + hysteresis + mất dữ liệu"]
@@ -133,7 +108,7 @@ flowchart TB
     tx["Một giao dịch SQLite:<br/>lưu trạng thái + thêm outbox từng kênh"]
     state["Lưu trạng thái<br/>Không tạo tin lặp"]
     ui["Cập nhật dashboard<br/>Mất kết nối: đánh dấu số đo cũ"]
-    wait["Chờ mốc chu kỳ tiếp theo<br/>Mặc định 30s; bỏ qua mốc quá trễ"]
+    wait["Chờ mốc chu kỳ tiếp theo<br/>Profile GNS3 5s; bỏ qua mốc quá trễ"]
     start --> read --> connected
     connected -->|"Có"| parse --> evaluate
     connected -->|"Không"| down --> evaluate
@@ -149,7 +124,7 @@ flowchart TB
     class tx,state database;
 ```
 
-Tin mới chỉ được tạo khi có chuyển trạng thái cần thông báo. Trạng thái và tin cảnh báo được ghi cùng giao dịch SQLite. Lần đầu mọi chỉ số bình thường không tạo tin thử; chỉ số chủ động tắt không tham gia vòng đánh giá.
+Tin mới chỉ được tạo khi có chuyển trạng thái cần thông báo. Trạng thái và tin cảnh báo được ghi cùng giao dịch SQLite. Lần đầu mọi chỉ số bình thường không tạo tin thử; chỉ số chủ động tắt không tham gia vòng đánh giá. Hybrid còn báo mất từng dịch vụ dù nguồn dự phòng hoạt động.
 
 ## Hình 5. Lưu đồ hàng đợi, gửi tin và thử lại
 
@@ -193,7 +168,7 @@ sequenceDiagram
     participant L as Linux / SSH
     participant D as SQLite
     participant W as Luồng gửi
-    participant T as Telegram API
+    participant T as Telegram / Slack API
     M->>L: Đọc CPU, RAM, interface
     L-->>M: RAM = 70%
     Note over M,D: Ngưỡng RAM 65%, trạng thái trước là OK
