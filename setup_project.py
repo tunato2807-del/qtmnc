@@ -243,6 +243,8 @@ def main(argv=None):
     parser.add_argument("--profile", choices=("classic","gns3","simple"),default="classic")
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--skip-ssh-check", action="store_true", help="Chỉ chuẩn bị cấu hình; chưa xác minh SSH")
+    parser.add_argument("--with-tap", action="store_true", help="Cài pywin32 cho cầu nối TAP/UDP trên Windows")
+    parser.add_argument("--install-only", action="store_true", help="Chỉ tạo .venv và cài thư viện, chưa hỏi secret hoặc kiểm tra SSH")
     parser.add_argument("--finish", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     if args.env_file is None:
@@ -252,7 +254,11 @@ def main(argv=None):
         return 2
     try:
         if not args.finish:
-            python = install_dependencies(requirements="requirements-simple.txt" if args.profile=="simple" else "requirements.txt")
+            requirements = "requirements-tap-windows.txt" if args.with_tap else "requirements-simple.txt" if args.profile=="simple" else "requirements.txt"
+            python = install_dependencies(requirements=requirements)
+            if args.install_only:
+                print("Đã cài thư viện. Cấu hình mạng trước, rồi chạy setup_windows.cmd --configure.")
+                return 0
             command = [str(python), str(ROOT / "setup_project.py"), "--finish", "--profile",args.profile,"--env-file", str(args.env_file.absolute())]
             if args.configure:
                 command.append("--configure")

@@ -1,0 +1,161 @@
+{
+  "name": "QTMNC_TAP",
+  "project_id": "a77a1318-3ac5-5d7f-932f-e0d2b057f975",
+  "type": "topology",
+  "revision": 9,
+  "version": "2.2.54",
+  "auto_start": false,
+  "auto_close": true,
+  "auto_open": false,
+  "scene_width": 1800,
+  "scene_height": 1000,
+  "zoom": 100,
+  "show_interface_labels": true,
+  "topology": {
+    "computes": [
+      {
+        "compute_id": "local",
+        "name": "Local",
+        "protocol": "http",
+        "host": "127.0.0.1",
+        "port": 3080
+      }
+    ],
+    "nodes": [
+      {
+        "name": "Cloud-WINDOWS",
+        "node_id": "c45ee25f-cfa1-51fc-ac1e-db4a596419fd",
+        "node_type": "cloud",
+        "compute_id": "local",
+        "console_type": "none",
+        "x": -500,
+        "y": -120,
+        "z": 1,
+        "symbol": ":/symbols/cloud.svg",
+        "properties": {
+          "ports_mapping": [
+            {
+              "name": "TAP-UDP",
+              "port_number": 0,
+              "type": "udp",
+              "lport": 30010,
+              "rhost": "127.0.0.1",
+              "rport": 30011
+            }
+          ]
+        },
+        "label": {
+          "text": "Cloud-WINDOWS",
+          "x": 0,
+          "y": -28,
+          "rotation": 0
+        }
+      },
+      {
+        "name": "Switch1",
+        "node_id": "ae8cb0cc-a7db-53c8-ace3-cc12e0ce5da4",
+        "node_type": "ethernet_switch",
+        "compute_id": "local",
+        "console_type": "none",
+        "x": -150,
+        "y": -120,
+        "z": 1,
+        "symbol": ":/symbols/ethernet_switch.svg",
+        "properties": {
+          "ports_mapping": [
+            {
+              "name": "Ethernet0",
+              "port_number": 0,
+              "type": "access",
+              "vlan": 1
+            },
+            {
+              "name": "Ethernet1",
+              "port_number": 1,
+              "type": "access",
+              "vlan": 1
+            },
+            {
+              "name": "Ethernet2",
+              "port_number": 2,
+              "type": "access",
+              "vlan": 1
+            },
+            {
+              "name": "Ethernet3",
+              "port_number": 3,
+              "type": "access",
+              "vlan": 1
+            }
+          ]
+        },
+        "label": {
+          "text": "Switch1",
+          "x": 0,
+          "y": -28,
+          "rotation": 0
+        }
+      },
+      {
+        "name": "Cloud-LINUX",
+        "node_id": "9118e7e7-a722-505a-ae75-037240a88f48",
+        "node_type": "cloud",
+        "compute_id": "local",
+        "console_type": "none",
+        "x": 220,
+        "y": -120,
+        "z": 1,
+        "symbol": ":/symbols/cloud.svg",
+        "properties": {
+          "ports_mapping": [
+            {
+              "name": "VMnet2",
+              "port_number": 0,
+              "type": "ethernet",
+              "interface": "VMware Network Adapter VMnet2"
+            }
+          ]
+        },
+        "label": {
+          "text": "Cloud-LINUX",
+          "x": 0,
+          "y": -28,
+          "rotation": 0
+        }
+      }
+    ],
+    "links": [
+      {
+        "link_id": "915f6c7d-1cf1-5455-b8ae-60cb81a5d44a",
+        "nodes": [
+          {
+            "node_id": "c45ee25f-cfa1-51fc-ac1e-db4a596419fd",
+            "adapter_number": 0,
+            "port_number": 0
+          },
+          {
+            "node_id": "ae8cb0cc-a7db-53c8-ace3-cc12e0ce5da4",
+            "adapter_number": 0,
+            "port_number": 0
+          }
+        ]
+      },
+      {
+        "link_id": "87b978c0-971b-59fa-822e-b4e5362d42ab",
+        "nodes": [
+          {
+            "node_id": "ae8cb0cc-a7db-53c8-ace3-cc12e0ce5da4",
+            "adapter_number": 0,
+            "port_number": 1
+          },
+          {
+            "node_id": "9118e7e7-a722-505a-ae75-037240a88f48",
+            "adapter_number": 0,
+            "port_number": 0
+          }
+        ]
+      }
+    ],
+    "drawings": []
+  }
+}

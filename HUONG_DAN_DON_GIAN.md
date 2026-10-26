@@ -1,5 +1,9 @@
 # Làm mô hình GNS3 đơn giản và chạy giám sát
 
+> Với trường hợp Windows đã bắt được SYN-ACK nhưng không hoàn tất kết nối qua
+> Cloud/loopback, dùng [hướng dẫn TAP/UDP](WINDOWS_TAP_GNS3.md). Phương án này
+> vẫn buộc cả hai chiều SSH đi qua switch GNS3, giữ IP Linux .10.129.
+
 Bạn đã có Windows, GNS3, VMware và Ubuntu. Chúng ta chỉ dùng **2 Cloud + 1
 Ethernet switch**, nối Windows sang Linux bằng SSH. Chưa cần router, VPCS,
 GNS3 VM, SNMP hay card mạng thử thứ ba.

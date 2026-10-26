@@ -1,5 +1,9 @@
 # Giám sát Linux qua GNS3 — bản dễ học
 
+**Windows thấy SYN-ACK nhưng không kết nối qua loopback?**
+Làm theo [cầu nối TAP/UDP để SSH vẫn đi xuyên GNS3](WINDOWS_TAP_GNS3.md).
+Có công cụ run_tap_windows.cmd và project mẫu QTMNC_TAP.gns3.
+
 **Windows chạy Python trong VS Code → GNS3 → SSH tới Linux → Telegram/Slack.**
 Chương trình xem CPU, RAM, nhiệt độ và trạng thái card mạng, gửi cảnh báo khi lỗi
 và khi phục hồi.
