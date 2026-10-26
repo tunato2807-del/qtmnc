@@ -1,0 +1,22 @@
+flowchart TB
+    start(["Luồng gửi hoạt động độc lập"])
+    inspect["Duyệt từng kênh Telegram / Slack<br/>Đọc tin cũ nhất của kênh trong SQLite"]
+    due{"Có tin và<br/>đã đến hạn gửi?"}
+    send["HTTPS POST<br/>Timeout kết nối 5s / đọc 10s"]
+    ack{"API xác nhận<br/>thành công?"}
+    delete["Xóa tin đã xác nhận khỏi outbox<br/>Cập nhật dashboard: đã gửi"]
+    fail["Giữ nguyên tin trong outbox<br/>attempts += 1"]
+    backoff["Đặt next_attempt<br/>Backoff 2, 4, 8... tối đa 300s<br/>HTTP 429: tôn trọng retry_after dài hơn"]
+    wait["Xét kênh kế tiếp<br/>Hết lượt: chờ 0,5s"]
+    start --> inspect --> due
+    due -->|"Có"| send --> ack
+    due -->|"Không"| wait
+    ack -->|"Telegram: HTTP 2xx và ok=true<br/>Slack: HTTP 2xx và nội dung ok"| delete --> wait
+    ack -->|"Lỗi mạng / HTTP lỗi<br/>hoặc chưa có xác nhận"| fail --> backoff --> wait
+    wait --> inspect
+    classDef normal fill:#eaf2ff,stroke:#2563eb,color:#0f172a;
+    classDef warning fill:#fffbeb,stroke:#d97706,color:#78350f;
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b;
+    class inspect,send normal;
+    class due,ack,fail,backoff warning;
+    class delete success;

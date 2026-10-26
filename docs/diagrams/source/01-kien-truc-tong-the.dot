@@ -1,0 +1,28 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="white", pad="0.25", nodesep="0.38", ranksep="0.55", fontname="Noto Sans", fontsize=16, compound=true];
+ node [shape=box, style="rounded,filled", fillcolor="#eaf2ff", color="#2563eb", fontname="Noto Sans", fontsize=13, margin="0.18,0.12", penwidth=1.3];
+ edge [color="#64748b", fontcolor="#334155", fontname="Noto Sans", fontsize=11, arrowsize=.75];
+ admin [label="Người quản trị", fillcolor="#f1f5f9", color="#64748b"];
+ linux [label="LINUX VM\n192.168.73.129\nOpenSSH Server"];
+ optional [label="SNMP agent / thiết bị hỗ trợ\nTùy chọn; chưa xác minh trong demo",fillcolor="#fffbeb",color="#d97706",style="rounded,filled,dashed"];
+ subgraph cluster_windows {
+  label="MÁY THẬT WINDOWS — CHƯƠNG TRÌNH PYTHON"; color="#94a3b8"; style="rounded"; fontname="Noto Sans"; fontsize=15;
+  env [label=".env + known_hosts\nCấu hình và xác minh thiết bị",fillcolor="#f1f5f9",color="#64748b"];
+  core [label="Luồng thu thập\nLập lịch 30s + đánh giá trạng thái",fillcolor="#dbeafe"];
+  ui [label="Dashboard Terminal\nChỉ số • cảnh báo • hàng đợi"];
+  db [label="SQLite\nTrạng thái + outbox",shape=cylinder,fillcolor="#ecfdf5",color="#059669"];
+  sender [label="Luồng gửi cảnh báo\nĐộc lập với vòng thu thập"];
+  env -> core; core -> ui; core -> db [label="Lưu trạng thái\n+ tin cần gửi"]; db -> sender [label="Tin đến hạn"];
+ }
+ tg [label="Telegram Bot API\nHTTPS / TCP 443"];
+ slack [label="Slack Incoming Webhook\nTùy chọn",fillcolor="#fffbeb",color="#d97706",style="rounded,filled,dashed"];
+ app [label="Ứng dụng nhắn tin\nNgười quản trị nhận cảnh báo",fillcolor="#ecfdf5",color="#059669"];
+ admin -> env [label="Cấu hình"];
+ core -> linux [label="SSH / TCP 22\nLệnh đọc chỉ số",dir=both];
+ core -> optional [label="SNMP / UDP 161\nThay thế SSH",style=dashed,color="#d97706"];
+ sender -> tg [label="Gửi tin + xác nhận API"];
+ sender -> slack [label="HTTPS",style=dashed,color="#d97706"];
+ tg -> app; slack -> app [style=dashed,color="#d97706"];
+ {rank=same; linux; optional;}
+ {rank=same; tg; slack;}
+}

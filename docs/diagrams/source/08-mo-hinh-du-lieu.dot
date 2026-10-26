@@ -1,0 +1,25 @@
+digraph G {
+ graph [rankdir=TB,bgcolor="white",pad=".3",nodesep=".7",ranksep=".65",fontname="Noto Sans",fontsize=16];
+ node [shape=plain,fontname="Noto Sans",fontsize=13];
+ edge [fontname="Noto Sans",fontsize=12,color="#64748b",fontcolor="#334155"];
+ states [label=<
+ <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="12" COLOR="#2563eb">
+  <TR><TD COLSPAN="3" BGCOLOR="#dbeafe"><B>states — trạng thái gần nhất</B></TD></TR>
+  <TR><TD BGCOLOR="#eff6ff"><B>Cột</B></TD><TD BGCOLOR="#eff6ff"><B>Kiểu</B></TD><TD BGCOLOR="#eff6ff"><B>Ý nghĩa</B></TD></TR>
+  <TR><TD ALIGN="LEFT">key (PK)</TD><TD>TEXT</TD><TD ALIGN="LEFT">SHA-256 định danh thiết bị</TD></TR>
+  <TR><TD ALIGN="LEFT">value</TD><TD>TEXT</TD><TD ALIGN="LEFT">JSON: connection, status, last_known</TD></TR>
+ </TABLE>>];
+ outbox [label=<
+ <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="12" COLOR="#059669">
+  <TR><TD COLSPAN="3" BGCOLOR="#d1fae5"><B>outbox — tin chưa gửi thành công</B></TD></TR>
+  <TR><TD BGCOLOR="#ecfdf5"><B>Cột</B></TD><TD BGCOLOR="#ecfdf5"><B>Kiểu</B></TD><TD BGCOLOR="#ecfdf5"><B>Ý nghĩa</B></TD></TR>
+  <TR><TD ALIGN="LEFT">id (PK)</TD><TD>INTEGER</TD><TD ALIGN="LEFT">Thứ tự tin trong hàng đợi</TD></TR>
+  <TR><TD ALIGN="LEFT">channel</TD><TD>TEXT</TD><TD ALIGN="LEFT">Định danh kênh nhận tin</TD></TR>
+  <TR><TD ALIGN="LEFT">message</TD><TD>TEXT</TD><TD ALIGN="LEFT">Nội dung cảnh báo và thời gian</TD></TR>
+  <TR><TD ALIGN="LEFT">attempts</TD><TD>INTEGER</TD><TD ALIGN="LEFT">Số lần gửi thất bại</TD></TR>
+  <TR><TD ALIGN="LEFT">next_attempt</TD><TD>REAL</TD><TD ALIGN="LEFT">Unix time của lần thử tiếp</TD></TR>
+ </TABLE>>];
+ note [shape=note,style=filled,fillcolor="#fffbeb",color="#d97706",label="Không có khóa ngoại giữa hai bảng.\nStore.observe ghi trạng thái và tin mới trong cùng giao dịch.\nTin gửi thành công được xóa; không có bảng lịch sử số đo."];
+ states -> outbox [style=invis];
+ outbox -> note [style=dashed,arrowhead=none,label="Quy tắc ứng dụng"];
+}

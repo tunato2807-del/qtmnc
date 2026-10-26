@@ -1,0 +1,20 @@
+digraph G {
+ graph [rankdir=TB,bgcolor="white",pad=".25",nodesep=".7",ranksep=".8",fontname="Noto Sans",fontsize=16];
+ node [shape=box,style="rounded,filled",fontname="Noto Sans",fontsize=14,margin=".2,.15",penwidth=1.5];
+ edge [fontname="Noto Sans",fontsize=12,color="#64748b",fontcolor="#334155",arrowsize=.8];
+ initial [shape=point,width=.13,color="#334155",label=""];
+ unknown [label="KHÔNG XÁC ĐỊNH\nUNKNOWN",fillcolor="#fffbeb",color="#d97706"];
+ ok [label="BÌNH THƯỜNG\nOK",fillcolor="#ecfdf5",color="#059669"];
+ alert [label="CẢNH BÁO\nALERT",fillcolor="#fff1f2",color="#e11d48"];
+ note [shape=note,label="x: số đo • T: ngưỡng • H: biên phục hồi\nL: last_known — trạng thái hợp lệ gần nhất\n\nKhi thiếu dữ liệu: giữ L\nKhi có dữ liệu trở lại:\nL = ALERT → dùng ranh giới T − H\nL khác ALERT → dùng ranh giới T\n\nRAM: T = 65%, H = 5 → phục hồi ≤ 60%",fillcolor="#f8fafc",color="#94a3b8",fontsize=12];
+ initial -> unknown;
+ unknown -> ok [label="Có dữ liệu;\nthuộc miền OK theo L"];
+ unknown -> alert [label="Có dữ liệu;\nthuộc miền ALERT theo L"];
+ ok -> alert [label="x > T"];
+ alert -> ok [label="x ≤ T − H"];
+ ok -> unknown [label="Thiếu / lỗi dữ liệu"];
+ alert -> unknown [label="Thiếu / lỗi dữ liệu"];
+ unknown -> unknown [label="Vẫn thiếu dữ liệu"];
+ unknown -> note [style=dashed,arrowhead=none];
+ {rank=same;ok;alert;}
+}

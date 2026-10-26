@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph physical["MỘT MÁY VẬT LÝ: WINDOWS + VMWARE"]
+        subgraph windows["WINDOWS HOST"]
+            monitor["Python + VS Code<br/>Chạy script giám sát"]
+            vmnet8["Adapter VMnet8<br/>192.168.73.1/24"]
+            wifi["Wi-Fi Windows<br/>192.168.1.227/24"]
+        end
+        subgraph nat["MẠNG NAT VMNET8: 192.168.73.0/24"]
+            linux["LINUX VM • ens33<br/>192.168.73.129/24<br/>OpenSSH Server • TCP 22"]
+            gateway["VMware NAT Gateway<br/>192.168.73.2"]
+        end
+        monitor -->|"SSH: gửi lệnh"| vmnet8
+        vmnet8 <-->|"Kết nối nội bộ cùng subnet"| linux
+        linux -->|"Default route của Linux"| gateway
+        gateway -. "Đường Internet của VM" .-> wifi
+        monitor -->|"Đường gửi Telegram của Windows"| wifi
+    end
+    router["Router LAN<br/>192.168.1.1"]
+    internet["Internet"]
+    api["Telegram API<br/>api.telegram.org • HTTPS 443"]
+    wifi --> router --> internet --> api
+    classDef host fill:#eaf2ff,stroke:#2563eb,color:#0f172a;
+    classDef vm fill:#ecfdf5,stroke:#059669,color:#064e3b;
+    classDef network fill:#f1f5f9,stroke:#64748b,color:#0f172a;
+    class monitor,vmnet8,wifi host;
+    class linux vm;
+    class gateway,router,internet network;

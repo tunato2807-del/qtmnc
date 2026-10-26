@@ -1,0 +1,21 @@
+digraph G {
+ graph [rankdir=TB,bgcolor="white",pad=".2",nodesep=".35",ranksep=".45",fontname="Noto Sans",fontsize=16];
+ node [shape=box,style="rounded,filled",fillcolor="#eaf2ff",color="#2563eb",fontname="Noto Sans",fontsize=13,margin=".18,.1",penwidth=1.3];
+ edge [fontname="Noto Sans",fontsize=11,color="#64748b",fontcolor="#334155",arrowsize=.7];
+ start [shape=oval,label="Luồng gửi độc lập"];
+ inspect [label="Duyệt lần lượt từng kênh\nĐọc tin cũ nhất của kênh từ SQLite"];
+ due [shape=diamond,label="Có tin và\nđã đến hạn gửi?",fillcolor="#fffbeb",color="#d97706"];
+ send [label="HTTPS POST\nTimeout kết nối 5s / đọc 10s"];
+ ack [shape=diamond,label="API xác nhận\nthành công?",fillcolor="#fffbeb",color="#d97706"];
+ del [label="Xóa tin đã xác nhận khỏi outbox\nDashboard: đã gửi thành công",fillcolor="#ecfdf5",color="#059669"];
+ fail [label="Giữ nguyên tin trong outbox\nattempts += 1",fillcolor="#fffbeb",color="#d97706"];
+ backoff [label="Hẹn next_attempt: 2, 4, 8… tối đa 300s\nHTTP 429: dùng retry_after nếu dài hơn",fillcolor="#fffbeb",color="#d97706"];
+ next [label="Xét kênh tiếp theo\nHết lượt: chờ 0,5s"];
+ start -> inspect -> due;
+ due -> send [label="Có"]; due -> next [label="Không"];
+ send -> ack;
+ ack -> del [label="Telegram: HTTP 2xx + ok=true\nSlack: HTTP 2xx + nội dung ok"];
+ ack -> fail [label="Lỗi / chưa xác nhận"];
+ fail -> backoff -> next; del -> next;
+ next -> inspect [constraint=false];
+}

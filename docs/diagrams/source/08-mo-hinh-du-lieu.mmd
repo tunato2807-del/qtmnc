@@ -1,0 +1,13 @@
+erDiagram
+    direction LR
+    states {
+        TEXT key PK "Định danh thiết bị SHA-256"
+        TEXT value "JSON: connection, status và last_known"
+    }
+    outbox {
+        INTEGER id PK "Thứ tự tin trong hàng đợi"
+        TEXT channel "Định danh kênh nhận tin"
+        TEXT message "Nội dung cảnh báo và thời gian"
+        INTEGER attempts "Số lần gửi thất bại"
+        REAL next_attempt "Unix time của lần thử tiếp"
+    }

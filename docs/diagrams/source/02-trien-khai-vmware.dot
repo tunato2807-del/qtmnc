@@ -1,0 +1,25 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="white", pad="0.25", nodesep=".45", ranksep=".6", fontname="Noto Sans", fontsize=16, compound=true];
+ node [shape=box,style="rounded,filled",fillcolor="#eaf2ff",color="#2563eb",fontname="Noto Sans",fontsize=13,margin=".18,.12",penwidth=1.3];
+ edge [fontname="Noto Sans",fontsize=11,color="#64748b",fontcolor="#334155",arrowsize=.75];
+ subgraph cluster_pc {
+  label="CÙNG MỘT MÁY VẬT LÝ: WINDOWS CHẠY VMWARE"; style="rounded"; color="#94a3b8"; fontname="Noto Sans"; fontsize=15;
+  monitor [label="Windows host\nVS Code + Python monitor"];
+  vmnet8 [label="Adapter VMnet8\n192.168.73.1/24"];
+  wifi [label="Wi-Fi Windows\n192.168.1.227/24"];
+  subgraph cluster_vmnet8 {
+   label="MẠNG NAT VMNET8 — 192.168.73.0/24"; style="rounded,filled"; fillcolor="#f8fafc"; color="#cbd5e1";
+   linux [label="LINUX VM — ens33\n192.168.73.129/24\nOpenSSH / TCP 22",fillcolor="#ecfdf5",color="#059669"];
+   gateway [label="VMware NAT Gateway\n192.168.73.2",fillcolor="#f1f5f9",color="#64748b"];
+  }
+  monitor -> vmnet8 [label="SSH từ Windows"];
+  vmnet8 -> linux [label="Cùng subnet VMnet8",dir=both];
+  linux -> gateway [label="Default route của Linux"];
+  gateway -> wifi [label="Internet của VM",style=dashed];
+  monitor -> wifi [label="Gửi cảnh báo từ Windows"];
+ }
+ router [label="Router LAN\n192.168.1.1",fillcolor="#f1f5f9",color="#64748b"];
+ internet [label="Internet",shape=ellipse,fillcolor="#f1f5f9",color="#64748b"];
+ tg [label="Telegram API\napi.telegram.org — HTTPS 443"];
+ wifi -> router -> internet -> tg;
+}

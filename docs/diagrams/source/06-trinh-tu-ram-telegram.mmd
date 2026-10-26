@@ -1,0 +1,28 @@
+sequenceDiagram
+    autonumber
+    participant M as Windows / luồng đo
+    participant L as Linux / SSH
+    participant D as SQLite
+    participant W as Luồng gửi
+    participant T as Telegram API
+    M->>L: Đọc CPU, RAM, interface
+    L-->>M: RAM = 70%
+    Note over M,D: Ngưỡng RAM 65%, trạng thái trước là OK
+    M->>D: Một transaction: RAM → ALERT + tin cảnh báo
+    W->>D: Lấy tin cũ nhất đến hạn
+    D-->>W: Tin cảnh báo RAM
+    W-xT: POST lần 1: lỗi kết nối
+    W->>D: Giữ tin, attempts + 1, hẹn thử lại
+    Note over M,W: Vòng đo tiếp tục, gửi lỗi không chặn thu thập
+    W->>D: Đọc lại tin khi đến hạn
+    W->>T: POST lần 2
+    T-->>W: HTTP 200, ok=true
+    W->>D: Xóa tin đã xác nhận
+    M->>L: Chu kỳ sau: đọc RAM
+    L-->>M: RAM = 50%
+    Note over M,D: 50% ≤ 60%: đạt ngưỡng phục hồi
+    M->>D: Một transaction: RAM → OK + tin phục hồi
+    W->>D: Lấy tin phục hồi đến hạn
+    W->>T: Gửi thông báo RAM bình thường
+    T-->>W: HTTP 200, ok=true
+    W->>D: Xóa tin đã xác nhận

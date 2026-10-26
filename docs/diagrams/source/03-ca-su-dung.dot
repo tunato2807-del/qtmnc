@@ -1,0 +1,34 @@
+digraph G {
+ graph [rankdir=LR,bgcolor="white",pad=".25",nodesep=".3",ranksep=".45",fontname="Noto Sans",fontsize=16];
+ node [shape=ellipse,style=filled,fillcolor="#eaf2ff",color="#2563eb",fontname="Noto Sans",fontsize=14,margin=".17,.1",penwidth=1.3];
+ edge [fontname="Noto Sans",fontsize=11,color="#64748b",fontcolor="#334155",arrowsize=.65];
+ admin [shape=box,style="rounded,filled",label="«actor»\nNgười quản trị",fillcolor="#f1f5f9",color="#64748b"];
+ linux [shape=box,style="rounded,filled",label="«hệ thống ngoài»\nLinux / OpenSSH",fillcolor="#f1f5f9",color="#64748b"];
+ telegram [shape=box,style="rounded,filled",label="«hệ thống ngoài»\nTelegram API",fillcolor="#f1f5f9",color="#64748b"];
+ subgraph cluster_system {
+  label="HỆ THỐNG GIÁM SÁT VÀ CẢNH BÁO"; style="rounded"; color="#94a3b8"; fontname="Noto Sans"; fontsize=15;
+  config [label="Cấu hình thiết bị,\nngưỡng và kênh"];
+  monitor [label="Khởi chạy / dừng\ngiám sát định kỳ"];
+  view [label="Xem dashboard\nvà hàng đợi"];
+  collect [label="Thu thập chỉ số\nqua SSH"];
+  evaluate [label="Đánh giá ngưỡng\nvà chuyển trạng thái"];
+  persist [label="Lưu trạng thái\nvà tin chưa gửi"];
+  notify [label="Phát cảnh báo\nvà thông báo phục hồi"];
+  retry [label="Thử lại\nkhi gửi thất bại"];
+  {rank=same; config; monitor; view; notify;}
+  {rank=same; collect; evaluate; persist; retry;}
+  monitor -> collect [label="«include»",style=dashed,constraint=false];
+  monitor -> evaluate [label="«include»",style=dashed,constraint=false];
+  monitor -> persist [label="«include»",style=dashed,constraint=false];
+  notify -> monitor [label="«extend»\ntrạng thái đổi",style=dashed,constraint=false];
+  retry -> notify [label="«extend»\ngửi lỗi",style=dashed,constraint=false];
+  config -> collect [style=invis];
+ }
+ admin -> config [dir=none];
+ admin -> monitor [dir=none];
+ admin -> view [dir=none];
+ admin -> notify [dir=none];
+ collect -> linux [dir=none];
+ notify -> telegram [dir=none];
+ {rank=same; linux; telegram;}
+}

@@ -1,0 +1,29 @@
+flowchart LR
+    admin["«actor»<br/>Người quản trị"]
+    linux["«hệ thống ngoài»<br/>Linux / OpenSSH"]
+    telegram["«hệ thống ngoài»<br/>Telegram API"]
+    subgraph system["HỆ THỐNG GIÁM SÁT VÀ CẢNH BÁO"]
+        config(["Cấu hình thiết bị<br/>ngưỡng và kênh nhận tin"])
+        monitor(["Khởi chạy / dừng<br/>giám sát định kỳ"])
+        view(["Xem trạng thái<br/>và hàng đợi cảnh báo"])
+        collect(["Thu thập chỉ số<br/>qua SSH"])
+        evaluate(["Đánh giá ngưỡng<br/>và chuyển trạng thái"])
+        persist(["Lưu trạng thái<br/>và tin chưa gửi"])
+        notify(["Phát cảnh báo<br/>và thông báo phục hồi"])
+        retry(["Thử lại<br/>khi gửi thất bại"])
+        monitor -. "«include»" .-> collect
+        monitor -. "«include»" .-> evaluate
+        monitor -. "«include»" .-> persist
+        notify -. "«extend»<br/>có chuyển trạng thái cần báo" .-> monitor
+        retry -. "«extend»<br/>gửi lỗi / chưa xác nhận" .-> notify
+    end
+    admin --- config
+    admin --- monitor
+    admin --- view
+    admin --- notify
+    linux --- collect
+    telegram --- notify
+    classDef actor fill:#f1f5f9,stroke:#64748b,color:#0f172a;
+    classDef uc fill:#eaf2ff,stroke:#2563eb,color:#0f172a;
+    class admin,linux,telegram actor;
+    class config,monitor,view,collect,evaluate,persist,notify,retry uc;

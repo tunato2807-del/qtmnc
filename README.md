@@ -10,6 +10,8 @@ hoặc Windows 10/11 có OpenSSH Server và Windows PowerShell 5.1 (`MONITOR_OS=
 
 Chiều ngược lại: [Linux VM giám sát Windows qua VMware NAT](LINUX_VM_TO_WINDOWS.md).
 
+**[Bộ 8 mô hình và sơ đồ dùng cho báo cáo: Word, PDF, PNG, SVG, Mermaid](docs/diagrams/README.md)**
+
 ## Các lỗi đã sửa
 
 - CPU Linux lấy chênh lệch hai mẫu `/proc/stat` cách nhau một giây; không phụ thuộc

@@ -1,0 +1,30 @@
+stateDiagram-v2
+    direction LR
+    state "Bình thường (OK)" as OK
+    state "Cảnh báo (ALERT)" as ALERT
+    state "Không xác định (UNKNOWN)" as UNKNOWN
+    [*] --> UNKNOWN
+    OK --> ALERT: x > T
+    ALERT --> OK: x ≤ T − H
+    OK --> UNKNOWN: Thiếu / lỗi dữ liệu
+    ALERT --> UNKNOWN: Thiếu / lỗi dữ liệu
+    UNKNOWN --> UNKNOWN: Vẫn chưa có dữ liệu
+    UNKNOWN --> OK: Có dữ liệu, thuộc miền OK theo L
+    UNKNOWN --> ALERT: Có dữ liệu, thuộc miền ALERT theo L
+    note right of UNKNOWN
+      L = last_known, trạng thái hợp lệ gần nhất
+      Giữ L khi thiếu dữ liệu
+      Nếu L = ALERT: ranh giới là T − H
+      Nếu L khác ALERT: ranh giới là T
+    end note
+    note right of ALERT
+      T: ngưỡng cảnh báo
+      H: biên phục hồi, mặc định 5
+      RAM: T = 65%, phục hồi ≤ 60%
+    end note
+    classDef good fill:#ecfdf5,stroke:#059669,color:#064e3b;
+    classDef bad fill:#fff1f2,stroke:#e11d48,color:#881337;
+    classDef unknown fill:#fffbeb,stroke:#d97706,color:#78350f;
+    class OK good;
+    class ALERT bad;
+    class UNKNOWN unknown;
