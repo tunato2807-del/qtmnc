@@ -10,6 +10,10 @@ RAM, ngắt interface, mất SSH và mất Internet trong mô phỏng. Trang ch�
 không điều khiển thiết bị và không gửi tin thật. Có PNG/SVG và PDF đi kèm.
 [Tải trọn bộ trực quan dạng ZIP](docs/truc_quan/QTMNC_TrucQuan.zip).
 
+**[Tải slide PowerPoint 22 trang](docs/slides/QTMNC_Executive_Thuyet_trinh.pptx)**
+(có thể sửa trực tiếp) · [Dàn ý chi tiết](docs/slides/QTMNC_Dan_y_22_slide.md) ·
+[Hướng dẫn dùng slide](docs/slides/README.md).
+
 **Làm theo [HUONG_DAN_DON_GIAN.md](HUONG_DAN_DON_GIAN.md), từ bước 1 đến bước 6.**
 
 ![Mô hình GNS3 đơn giản](docs/simple/topology.png)
