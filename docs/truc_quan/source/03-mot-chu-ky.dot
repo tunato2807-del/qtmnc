@@ -1,0 +1,26 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="white", pad=.35, nodesep=.4, ranksep=.55, fontname="DejaVu Sans"];
+ node [shape=box, style="rounded,filled", fillcolor="#eff6ff", color="#2563eb", penwidth=1.5, fontname="DejaVu Sans", fontsize=16, margin=".2,.15"];
+ edge [color="#475569", fontname="DejaVu Sans", fontsize=12];
+ config [label="Đọc .env.simple\nIP · tài khoản · ngưỡng · kênh nhận tin"];
+ connect [label="Kết nối SSH tới Ubuntu\nKiểm tra host key + xác thực tài khoản"];
+ cpu [label="CPU\n/proc/stat\nHai mẫu cách nhau ~1s",fillcolor="#dcfce7",color="#16a34a"];
+ ram [label="RAM\n/proc/meminfo\nMemTotal / MemAvailable",fillcolor="#dcfce7",color="#16a34a"];
+ temp [label="Nhiệt độ\nCảm biến CPU trong /sys\nThiếu → UNKNOWN",fillcolor="#dcfce7",color="#16a34a"];
+ iface [label="Interface ens33\n/sys/class/net/...\noperstate UP / DOWN",fillcolor="#dcfce7",color="#16a34a"];
+ {rank=same;cpu;ram;temp;iface}
+ evaluate [label="Đánh giá từng chỉ số\nOK / ALERT / UNKNOWN",fillcolor="#fef3c7",color="#d97706"];
+ save [label="Lưu trạng thái\nCó chuyển trạng thái → thêm tin vào SQLite",fillcolor="#ede9fe",color="#7c3aed"];
+ display [label="Cập nhật bảng + chờ 5s\nBản đơn giản chờ sau lượt đọc"];
+ worker [label="LUỒNG GỬI RIÊNG\nĐọc tin → gửi Telegram/Slack\nLỗi mạng → giữ tin, thử lại",fillcolor="#cffafe",color="#0891b2"];
+ lost [label="Không lấy được dữ liệu qua SSH\nTạo cảnh báo mất kết nối",fillcolor="#fee2e2",color="#dc2626"];
+ config -> connect;
+ connect -> cpu [label="SSH hoạt động"];
+ connect -> ram; connect -> temp; connect -> iface;
+ cpu -> evaluate; ram -> evaluate; temp -> evaluate; iface -> evaluate;
+ connect -> lost [label="Kết nối / xác thực thất bại",color="#dc2626"];
+ evaluate -> save; lost -> save;
+ save -> display;
+ save -> worker [label="Tin chờ",style=dashed];
+ display -> connect [label="Lượt tiếp theo",color="#2563eb"];
+}

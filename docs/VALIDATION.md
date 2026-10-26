@@ -16,6 +16,8 @@ Kết quả trong môi trường phát triển Linux ngày 26/10/2026:
 | Project QTMNC_TAP | Hợp lệ theo schema project và schema cổng UDP Cloud; cả hai link qua Switch1 |
 | Mermaid | Cả 8 sơ đồ phân tích cú pháp hợp lệ |
 | Báo cáo | Dựng lại 8 PNG/SVG, PDF 10 trang và Word |
+| Bộ học trực quan mới | 6 PNG/SVG, PDF 13 trang và HTML tự chứa; sơ đồ đối chiếu mô hình ens37/ens33 hiện tại |
+| Mô phỏng tương tác | Chromium: ngưỡng RAM đối chiếu engine thật, cảnh báo/phục hồi, UNKNOWN, mất SSH, interface DOWN và hàng đợi mất Internet; desktop/mobile; không yêu cầu mạng ngoài |
 
 Schema tham chiếu từ kho GNS3/gns3-server, commit
 9c6a0c7be42629fd0c72fab1e3376c34f7dd1681, file docs/gns3_file.json.

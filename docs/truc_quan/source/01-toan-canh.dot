@@ -1,0 +1,18 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="white", pad=.35, nodesep=.5, ranksep=.85, fontname="DejaVu Sans"];
+ node [shape=box, style="rounded,filled", fillcolor="#eff6ff", color="#2563eb", penwidth=1.6, fontname="DejaVu Sans", fontsize=17, margin=".25,.18"];
+ edge [color="#475569", penwidth=1.5, fontname="DejaVu Sans", fontsize=13, fontcolor="#334155"];
+ win [id="overview-windows",label="WINDOWS THẬT\nVS Code + Python\nMáy giám sát",fillcolor="#dbeafe"];
+ network [label="MẠNG GNS3\nCloud → Switch1 → Cloud\nChuyển tiếp dữ liệu",fillcolor="#f1f5f9",color="#64748b"];
+ linux [id="overview-linux",label="UBUNTU TRONG VMWARE\nCPU · RAM · nhiệt độ · interface\nThiết bị được giám sát",fillcolor="#dcfce7",color="#16a34a"];
+ {rank=same;win;network;linux}
+ win -> network [dir=both,label="SSH / SNMP"];
+ network -> linux [dir=both,label="Yêu cầu / kết quả"];
+ engine [label="PYTHON ĐÁNH GIÁ\nSo số liệu với ngưỡng\nNhận biết cảnh báo / phục hồi",fillcolor="#fef3c7",color="#d97706"];
+ queue [label="LƯU TRÊN WINDOWS\nTrạng thái + tin chưa gửi\nSQLite",fillcolor="#ede9fe",color="#7c3aed"];
+ api [label="TELEGRAM / SLACK\nNhận tin qua Internet\nĐiện thoại / máy tính",fillcolor="#cffafe",color="#0891b2"];
+ {rank=same;engine;queue;api}
+ win -> engine [label="Số liệu nhận được"];
+ engine -> queue [label="Có thay đổi trạng thái"];
+ queue -> api [label="HTTPS qua Internet Windows"];
+}

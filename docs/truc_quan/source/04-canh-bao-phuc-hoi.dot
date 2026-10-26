@@ -1,0 +1,20 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="white", pad=.4, nodesep=.5, ranksep=.7, fontname="DejaVu Sans"];
+ node [shape=box, style="rounded,filled", penwidth=1.6, fontname="DejaVu Sans", fontsize=17, margin=".22,.2"];
+ edge [color="#475569", penwidth=1.5, fontname="DejaVu Sans", fontsize=13];
+ a [label="RAM 50%\nOK\nChưa có cảnh báo",fillcolor="#dcfce7",color="#16a34a"];
+ b [label="RAM 72%\nALERT\nGửi tin cảnh báo",fillcolor="#fee2e2",color="#dc2626"];
+ c [label="RAM 74%\nVẫn ALERT\nKhông tạo tin lặp",fillcolor="#fee2e2",color="#dc2626"];
+ d [label="RAM 63%\nVẫn ALERT\nChưa về ≤60%",fillcolor="#fef3c7",color="#d97706"];
+ e [label="RAM 58%\nOK\nGửi tin phục hồi",fillcolor="#dcfce7",color="#16a34a"];
+ {rank=same;a;b;c}
+ {rank=same;d;e}
+ a -> b [label="Vượt 65%"];
+ b -> c [label="Lượt sau"];
+ c -> d [label="Đang giảm"];
+ d -> e [label="Đạt ngưỡng phục hồi"];
+ note [label="MẪU CẤU HÌNH\nCảnh báo: RAM >65%\nPhục hồi sau cảnh báo: RAM ≤60%\nNếu trước đó OK thì RAM 63% vẫn OK",fillcolor="#eff6ff",color="#2563eb"];
+ b -> note [style=dashed,arrowhead=none];
+ unknown [label="Không đọc được số liệu\nUNKNOWN\nKhông tự coi là 0% hoặc OK",fillcolor="#f1f5f9",color="#64748b"];
+ c -> unknown [style=dashed,label="Thiếu dữ liệu"];
+}

@@ -1,0 +1,18 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="white", pad=.35, nodesep=.55, ranksep=.65, fontname="DejaVu Sans"];
+ node [shape=box, style="rounded,filled", fillcolor="#eff6ff", color="#2563eb", penwidth=1.5, fontname="DejaVu Sans", fontsize=16, margin=".22,.18"];
+ edge [color="#475569", fontname="DejaVu Sans", fontsize=12, penwidth=1.5];
+ windows [label="PYTHON TRÊN WINDOWS\nMáy giám sát"];
+ ssh [label="SSH — BẢN ĐANG DÙNG\nParamiko ↔ OpenSSH\nTCP 22",fillcolor="#dcfce7",color="#16a34a"];
+ commands [label="Chạy lệnh trên Ubuntu\nĐọc /proc và /sys",fillcolor="#dcfce7",color="#16a34a"];
+ snmp [label="SNMP — BẢN MỞ RỘNG\nPySNMP ↔ SNMP agent\nUDP 161",fillcolor="#f1f5f9",color="#64748b",style="rounded,filled,dashed"];
+ agent [label="Truy vấn OID trên agent Linux\nExtend JSON: CPU/RAM/temp\nIF-MIB: interface",fillcolor="#f1f5f9",color="#64748b",style="rounded,filled,dashed"];
+ sample [label="SỐ LIỆU CHUẨN HÓA\nCPU · RAM · nhiệt độ · interface"];
+ common [label="DÙNG CHUNG PHẦN XỬ LÝ\nSo ngưỡng → lưu trạng thái\n→ gửi Telegram / Slack",fillcolor="#fef3c7",color="#d97706"];
+ {rank=same;ssh;snmp}
+ {rank=same;commands;agent}
+ windows -> ssh -> commands -> sample;
+ windows -> snmp [style=dashed];
+ snmp -> agent -> sample [style=dashed];
+ sample -> common;
+}

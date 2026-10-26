@@ -1,12 +1,14 @@
-# Giám sát Linux qua GNS3 — bản dễ học
-
-**Windows thấy SYN-ACK nhưng không kết nối qua loopback?**
-Làm theo [cầu nối TAP/UDP để SSH vẫn đi xuyên GNS3](WINDOWS_TAP_GNS3.md).
-Có công cụ run_tap_windows.cmd và project mẫu QTMNC_TAP.gns3.
+# Hệ thống giám sát thiết bị và cảnh báo Telegram/Slack
 
 **Windows chạy Python trong VS Code → GNS3 → SSH tới Linux → Telegram/Slack.**
 Chương trình xem CPU, RAM, nhiệt độ và trạng thái card mạng, gửi cảnh báo khi lỗi
 và khi phục hồi.
+
+**Xem [6 mô hình trực quan và giải thích từ đầu đến cuối](docs/truc_quan/README.md).**
+Tải [index.html](docs/truc_quan/index.html) rồi mở bằng Chrome/Edge để thử tăng
+RAM, ngắt interface, mất SSH và mất Internet trong mô phỏng. Trang chạy offline,
+không điều khiển thiết bị và không gửi tin thật. Có PNG/SVG và PDF đi kèm.
+[Tải trọn bộ trực quan dạng ZIP](docs/truc_quan/QTMNC_TrucQuan.zip).
 
 **Làm theo [HUONG_DAN_DON_GIAN.md](HUONG_DAN_DON_GIAN.md), từ bước 1 đến bước 6.**
 
@@ -91,6 +93,10 @@ thực; mạng chậm và retry có thể làm tin tới muộn.
 - [Thiết kế chi tiết](docs/ARCHITECTURE.md).
 - [Kịch bản nghiệm thu mở rộng](docs/TEST_PLAN.md).
 - [Bộ 8 sơ đồ Word/PDF của mô hình mở rộng](docs/diagrams/README.md).
+
+Với lab Windows đã bắt được SYN-ACK nhưng không kết nối qua Cloud/loopback,
+xem [cách hỗ trợ kết nối TAP/UDP](WINDOWS_TAP_GNS3.md). Đây là công cụ hỗ trợ
+mạng của lab hiện tại, không phải chức năng bắt buộc của đề tài.
 
 Bản đơn giản chọn SSH cho hướng đề tài "SNMP/SSH". Nếu bắt buộc cả hai giao thức,
 dùng bản mở rộng: py -3 setup_project.py --profile gns3 --configure, rồi

@@ -1,0 +1,35 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=.4, nodesep=.5, ranksep=.75, fontname="DejaVu Sans",newrank=true];
+ node [shape=box, style="rounded,filled", fillcolor="#eff6ff", color="#2563eb", penwidth=1.5, fontname="DejaVu Sans", fontsize=15, margin=".22,.16"];
+ edge [color="#475569", penwidth=1.5, fontname="DejaVu Sans", fontsize=12, fontcolor="#334155"];
+ subgraph cluster_windows {
+  label="MÁY THẬT WINDOWS"; fontsize=18; color="#93c5fd"; style=rounded;
+  app [label="VS Code + Python\nSSH tới 192.168.10.129:22"];
+  tap [label="Local Area Connection\nTAP-Windows V9\n192.168.10.1/24",fillcolor="#f1f5f9",color="#64748b"];
+  helper [label="Cầu nối hỗ trợ mạng\nUDP 127.0.0.1:30011",fillcolor="#f1f5f9",color="#64748b"];
+  {rank=same;app;tap;helper}
+  app -> tap -> helper [dir=both];
+ }
+ subgraph cluster_gns {
+  label="GNS3 — 2 CLOUD + 1 SWITCH"; fontsize=18; color="#fbbf24"; style=rounded;
+  cw [label="Cloud-WINDOWS\nUDP local 30010\nremote 127.0.0.1:30011",fillcolor="#fffbeb",color="#d97706"];
+  sw [label="Switch1\nHai port access VLAN 1",fillcolor="#fffbeb",color="#d97706"];
+  cl [label="Cloud-LINUX\nVMware Network Adapter\nVMnet2",fillcolor="#fffbeb",color="#d97706"];
+  {rank=same;cw;sw;cl}
+  cw -> sw -> cl [dir=both];
+ }
+ helper -> cw [dir=both,label="UDP localhost mang frame SSH"];
+ subgraph cluster_linux {
+  label="UBUNTU VM TRONG VMWARE"; fontsize=18; color="#86efac"; style=rounded;
+  mgmt [label="ens37 — QUẢN TRỊ\n192.168.10.129/24\nSSH TCP 22",fillcolor="#dcfce7",color="#16a34a"];
+  os [label="Linux trả số liệu\n/proc · /sys",fillcolor="#dcfce7",color="#16a34a"];
+  nat [label="ens33 — CARD THEO DÕI\n192.168.73.129/24 (DHCP)\nNAT / VMnet8",fillcolor="#dcfce7",color="#16a34a"];
+  {rank=same;mgmt;os;nat}
+  mgmt -> os [dir=both];
+  os -> nat [style=dashed,label="Đọc trạng thái ens33"];
+ }
+ cl -> mgmt [dir=both,label="Mạng VMware VMnet2"];
+ internet [label="INTERNET\nTelegram / Slack",fillcolor="#cffafe",color="#0891b2"];
+ app -> internet [label="Wi-Fi Windows · HTTPS 443",color="#0891b2",fontcolor="#0891b2",constraint=false];
+ nat -> internet [label="Internet Ubuntu qua NAT\nGateway 192.168.73.2",style=dashed];
+}

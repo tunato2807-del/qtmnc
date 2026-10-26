@@ -1,0 +1,17 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=.35, nodesep=.45, ranksep=.65, fontname="DejaVu Sans"];
+ node [shape=box, style="rounded,filled", fillcolor="#eff6ff", color="#2563eb", penwidth=1.5, fontname="DejaVu Sans", fontsize=16, margin=".22,.18"];
+ edge [color="#475569", fontname="DejaVu Sans", fontsize=12, penwidth=1.5];
+ iface [label="1. NGẮT ens33\nGiữ ens37 + GNS3",fillcolor="#fef3c7",color="#d97706"];
+ read [label="SSH vẫn hoạt động\nĐọc được ens33 DOWN"];
+ ifacealert [label="CẢNH BÁO INTERFACE\nBật lại ens33 → phục hồi",fillcolor="#fee2e2",color="#dc2626"];
+ path [label="2. NGẮT ĐƯỜNG GNS3\nHoặc tắt Ubuntu",fillcolor="#fef3c7",color="#d97706"];
+ no_read [label="SSH mất kết nối\nKhông có số đo mới"];
+ pathalert [label="CẢNH BÁO MẤT SSH\nNối lại → khôi phục kết nối",fillcolor="#fee2e2",color="#dc2626"];
+ internet [label="3. MẤT INTERNET WINDOWS\nGiữ đường SSH lab",fillcolor="#fef3c7",color="#d97706"];
+ pending [label="Tiếp tục đọc số liệu\nTin mới nằm trong hàng đợi"];
+ retry [label="CÓ INTERNET TRỞ LẠI\nThử gửi các tin đang chờ",fillcolor="#dcfce7",color="#16a34a"];
+ iface -> read -> ifacealert;
+ path -> no_read -> pathalert;
+ internet -> pending -> retry;
+}
