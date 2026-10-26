@@ -11,7 +11,7 @@ không điều khiển thiết bị và không gửi tin thật. Có PNG/SVG và
 [Tải trọn bộ trực quan dạng ZIP](docs/truc_quan/QTMNC_TrucQuan.zip).
 
 **[Tải slide PowerPoint 22 trang](docs/slides/QTMNC_Executive_Thuyet_trinh.pptx)**
-(có thể sửa trực tiếp) · [Dàn ý chi tiết](docs/slides/QTMNC_Dan_y_22_slide.md) ·
+(cỡ chữ tối thiểu 20 pt, có thể sửa trực tiếp) · [Dàn ý chi tiết](docs/slides/QTMNC_Dan_y_22_slide.md) ·
 [Hướng dẫn dùng slide](docs/slides/README.md).
 
 **Làm theo [HUONG_DAN_DON_GIAN.md](HUONG_DAN_DON_GIAN.md), từ bước 1 đến bước 6.**

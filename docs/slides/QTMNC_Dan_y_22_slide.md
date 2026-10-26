@@ -1,6 +1,6 @@
 # Dàn ý thuyết trình: Hệ thống giám sát thiết bị
 
-**Bộ trình chiếu:** 22 slide · 16:9 · phần tử PowerPoint có thể chỉnh sửa.
+**Bộ trình chiếu:** 22 slide · 16:9 · cỡ chữ trên slide tối thiểu 20 pt · phần tử PowerPoint có thể chỉnh sửa.
 **Phạm vi trình bày:** Windows chạy Python → GNS3 → Ubuntu VMware → Telegram/Slack.
 **Lưu ý trạng thái:** Bản đơn giản đã cấu hình SSH; SNMP/hybrid là phương án mở rộng. Kết quả loopback tự động không thay thế nghiệm thu agent/API trên thiết bị thật.
 

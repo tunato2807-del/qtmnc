@@ -797,9 +797,9 @@ def build_deck():
     prs.core_properties.author = "QTMNC"
     prs.core_properties.keywords = "GNS3, SSH, SNMP, Telegram, Slack, Ubuntu"
     cover = prs.slides.add_slide(prs.slide_layouts[6])
-    add_cover(cover, SLIDES[0])
+    add_cover_20(cover, SLIDES[0])
     for i, model in enumerate(SLIDES[1:], start=2):
-        add_regular_slide(prs, model, i)
+        add_regular_slide_20(prs, model, i)
     out = OUT / "QTMNC_Executive_Thuyet_trinh.pptx"
     prs.save(out)
     return out
@@ -809,7 +809,7 @@ def build_outline():
     lines = [
         "# Dàn ý thuyết trình: Hệ thống giám sát thiết bị",
         "",
-        "**Bộ trình chiếu:** 22 slide · 16:9 · phần tử PowerPoint có thể chỉnh sửa.",
+        "**Bộ trình chiếu:** 22 slide · 16:9 · cỡ chữ trên slide tối thiểu 20 pt · phần tử PowerPoint có thể chỉnh sửa.",
         "**Phạm vi trình bày:** Windows chạy Python → GNS3 → Ubuntu VMware → Telegram/Slack.",
         "**Lưu ý trạng thái:** Bản đơn giản đã cấu hình SSH; SNMP/hybrid là phương án mở rộng. Kết quả loopback tự động không thay thế nghiệm thu agent/API trên thiết bị thật.",
         "",
@@ -852,6 +852,158 @@ def visual_name(kind: str) -> str:
         "limitations": "Bốn khối giới hạn kỹ thuật",
         "actions": "Lộ trình 5 bước nghiệm thu",
     }[kind]
+
+
+# Large-type presentation layout. All visible text on these slides is >= 20 pt.
+def large_text(slide, value, x, y, w, h, *, size=20, col=INK, bold=False,
+               align=PP_ALIGN.LEFT, valign=MSO_ANCHOR.MIDDLE, margin=0.06):
+    box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+    tf = box.text_frame
+    tf.clear()
+    tf.word_wrap = True
+    tf.vertical_anchor = valign
+    tf.margin_left = Inches(margin)
+    tf.margin_right = Inches(margin)
+    tf.margin_top = Inches(0.015)
+    tf.margin_bottom = Inches(0.015)
+    p = tf.paragraphs[0]
+    p.alignment = align
+    p.space_before = Pt(0)
+    p.space_after = Pt(0)
+    run = p.add_run()
+    run.text = value
+    run.font.name = FONT
+    run.font.size = Pt(max(20, size))
+    run.font.bold = bold
+    run.font.color.rgb = color(col)
+    return box
+
+
+def large_node(slide, x, y, w, h, heading, detail="", *, fill=PALE_BLUE,
+               edge=BLUE, dark=False):
+    rect(slide, x, y, w, h, fill, line=edge)
+    main_col = WHITE if dark else NAVY
+    sub_col = "DFE8F1" if dark else MUTED
+    if detail:
+        large_text(slide, heading, x + .08, y + .08, w - .16, .43,
+                   col=main_col, bold=True, align=PP_ALIGN.CENTER, margin=.02)
+        large_text(slide, detail, x + .08, y + .53, w - .16, h - .60,
+                   col=sub_col, align=PP_ALIGN.CENTER, margin=.02)
+    else:
+        large_text(slide, heading, x + .08, y + .07, w - .16, h - .14,
+                   col=main_col, bold=True, align=PP_ALIGN.CENTER, margin=.02)
+
+
+def large_flow(slide, x, y, w, h, items, *, palette=None, dark=False):
+    palette = palette or [BLUE, ORANGE, GREEN, TEAL]
+    gap = .35 if len(items) <= 3 else .25
+    node_w = (w - (len(items) - 1) * gap) / len(items)
+    node_h = min(h, 1.10)
+    yy = y + (h - node_h) / 2
+    for i, (heading, detail) in enumerate(items):
+        xx = x + i * (node_w + gap)
+        col = palette[i % len(palette)]
+        fill = ("223758", "3D342B", "243D34", "203E40")[i % 4] if dark else (PALE_BLUE, PALE_ORANGE, PALE_GREEN, PALE_TEAL)[i % 4]
+        large_node(slide, xx, yy, node_w, node_h, heading, detail,
+                   fill=fill, edge=col, dark=dark)
+        if i < len(items) - 1:
+            connector(slide, xx + node_w + .04, yy + node_h / 2,
+                      xx + node_w + gap - .04, yy + node_h / 2, col, width=2.2)
+
+
+def large_visual(slide, model, x, y, w, h):
+    kind = model["visual"]["kind"]
+    visuals = {
+        "cover": [("WINDOWS", "PYTHON / VS CODE"), ("GNS3", "MẠNG LAB"), ("UBUNTU", "THIẾT BỊ ĐÍCH"), ("BOT API", "TELEGRAM / SLACK")],
+        "flow": [("THIẾT BỊ", "ĐỌC CHỈ SỐ"), ("PYTHON", "ĐÁNH GIÁ"), ("QUẢN TRỊ", "NHẬN TIN")],
+        "architecture": [("WINDOWS", "PYTHON"), ("GNS3", "SSH / TCP 22"), ("UBUNTU", "CPU · RAM · NIC"), ("BOT API", "HTTPS · ALERTS")],
+        "roles": [("WINDOWS", "GIÁM SÁT"), ("GNS3", "CHUYỂN TIẾP"), ("UBUNTU", "ĐỐI TƯỢNG ĐO"), ("BOT", "GỬI CẢNH BÁO")],
+        "network": [("WINDOWS", "TAP · .10.1"), ("CLOUD", "GNS3"), ("SWITCH", "VLAN 1"), ("UBUNTU", "ens37 · .10.129")],
+        "tappath": [("PYTHON", "YÊU CẦU SSH"), ("TAP / UDP", "FRAME"), ("GNS3", "SWITCH"), ("UBUNTU", "SSHD · 22")],
+        "protocols": [("SSH", "TCP / 22"), ("SNMP", "UDP / 161"), ("HYBRID", "DỰ PHÒNG")],
+        "modules": [("COLLECTOR", "SSH / SNMP"), ("ENGINE", "NGƯỠNG"), ("SQLITE", "STATE / OUTBOX"), ("SENDER", "TELEGRAM / SLACK")],
+        "metrics": [("CPU", "/proc/stat"), ("RAM", "/proc/meminfo"), ("TEMP", "/sys/hwmon"), ("INTERFACE", "ens33")],
+        "formulas": [("CPU", "100 × (1 − idle Δ / total Δ)"), ("RAM", "100 × (total − available) / total")],
+        "temperature": [("AUTO", "ĐỌC CẢM BIẾN"), ("UNKNOWN", "THIẾU SENSOR"), ("DEMO", "NHÃN MÔ PHỎNG")],
+        "cycle": [("CONNECT", "KẾT NỐI"), ("READ", "THU THẬP"), ("EVALUATE", "ĐÁNH GIÁ"), ("NOTIFY", "GỬI TIN")],
+        "thresholds": [("CPU", "> 75%"), ("RAM", "> 65%"), ("TEMP", "> 65°C"), ("IFACE", "DOWN")],
+        "states": [("OK", "BÌNH THƯỜNG"), ("ALERT", "VƯỢT NGƯỠNG"), ("RECOVERY", "ĐÃ PHỤC HỒI")],
+        "incidents": [("ens33 DOWN", "SSH CÒN"), ("SSH MẤT", "UNKNOWN"), ("MẠNG MẤT", "QUEUE")],
+        "outbox": [("STATE", "SỰ KIỆN"), ("SQLITE", "LƯU BỀN"), ("OUTBOX", "CHỜ GỬI"), ("API", "THỬ LẠI")],
+        "security": [("HOST KEY", "XÁC MINH"), ("SECRET", ".ENV CỤC BỘ"), ("HTTPS", "TLS"), ("SNMPv3", "AUTH / PRIV")],
+        "profiles": [("ĐƠN GIẢN", "SSH"), ("MỞ RỘNG", "SSH + SNMP")],
+        "testmatrix": [("CPU / RAM", "VƯỢT NGƯỠNG"), ("SSH / NIC", "NGẮT KẾT NỐI"), ("INTERNET", "QUEUE / RETRY")],
+        "evidence": [("119", "UNIT TESTS"), ("TCP / 22", "ĐÃ KẾT NỐI"), ("106 / 57", "FRAME"), ("0", "DROPPED")],
+        "limitations": [("NHIỆT ĐỘ", "VM THIẾU SENSOR"), ("LỊCH SỬ", "SQLITE / STATE"), ("MÁY CHỦ", "HOST TẮT → DỪNG")],
+        "actions": [("1 · MẠNG", "KHÔI PHỤC"), ("2 · SSH", "XÁC NHẬN"), ("3 · COLLECTOR", "CHẠY THẬT"), ("4 · ALERT", "NGHIỆM THU")],
+    }
+    large_flow(slide, x + .25, y, w - .50, h, visuals[kind])
+
+
+def add_cover_20(slide, model):
+    rect(slide, 0, 0, W, H, NAVY, shape=MSO_SHAPE.RECTANGLE, line=NAVY)
+    rect(slide, 0, 0, .16, H, TEAL, shape=MSO_SHAPE.RECTANGLE, line=TEAL)
+    large_text(slide, "QTMNC  ·  THUYẾT TRÌNH DỰ ÁN", .78, .38, 8.0, .42,
+               size=20, col="99E7DA", bold=True)
+    large_text(slide, model["title"], .78, .90, 11.9, .90,
+               size=38, col=WHITE, bold=True)
+    large_text(slide, model["message"], .82, 1.89, 11.5, .82,
+               size=22, col="E8EEF5")
+    card_w, card_h, gap = 3.78, 1.48, .24
+    for i, (head, body) in enumerate(model["points"]):
+        xx = .82 + i * (card_w + gap)
+        rect(slide, xx, 2.95, card_w, card_h, NAVY2, line="305271")
+        large_text(slide, head.upper(), xx + .13, 3.04, card_w - .26, .34,
+                   size=20, col="99E7DA", bold=True)
+        large_text(slide, body, xx + .13, 3.40, card_w - .26, .90,
+                   size=20, col=WHITE)
+    large_flow(slide, .86, 4.73, 11.6, 1.10, [
+        ("WINDOWS", "PYTHON / VS CODE"), ("GNS3", "MẠNG LAB"),
+        ("UBUNTU", "THIẾT BỊ ĐÍCH"), ("BOT API", "TELEGRAM / SLACK")], dark=True)
+    large_text(slide, model["evidence"], .86, 6.05, 11.55, .64,
+               size=20, col="DFE8F1", bold=True, align=PP_ALIGN.CENTER)
+    large_text(slide, "01 / 22", 10.70, 7.02, 1.80, .32,
+               size=20, col="AFC0D0", align=PP_ALIGN.RIGHT)
+
+
+def add_regular_slide_20(prs, model, idx):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = color(BG)
+    rect(slide, 0, 0, W, .13, TEAL, shape=MSO_SHAPE.RECTANGLE, line=TEAL)
+    large_text(slide, f"QTMNC  /  {model['section']}", .64, .25, 8.8, .38,
+               size=20, col=TEAL_DARK, bold=True, margin=.01)
+    large_text(slide, model["title"], .63, .68, 11.0, .66,
+               size=30, col=NAVY, bold=True, margin=.01)
+    rect(slide, 11.85, .66, .84, .55, NAVY, line=NAVY)
+    large_text(slide, f"{idx:02d}", 11.88, .70, .78, .46,
+               size=20, col=WHITE, bold=True, align=PP_ALIGN.CENTER, margin=.01)
+
+    rect(slide, .65, 1.48, 12.04, .82, WHITE, line=LINE)
+    large_text(slide, "THÔNG ĐIỆP  ·  " + model["message"], .82, 1.55, 11.68, .68,
+               size=20, col=NAVY, bold=True, margin=.04)
+
+    fills = [PALE_BLUE, PALE_ORANGE, PALE_TEAL]
+    edges = [BLUE, ORANGE, TEAL]
+    for i, (head, body) in enumerate(model["points"]):
+        yy = 2.43 + i * .78
+        rect(slide, .65, yy, 12.04, .68, fills[i], line=fills[i])
+        rect(slide, .65, yy, .08, .68, edges[i], shape=MSO_SHAPE.RECTANGLE, line=edges[i])
+        large_text(slide, f"{i + 1:02d}  {head}: {body}", .83, yy + .04, 11.70, .59,
+                   size=20, col=NAVY, bold=(i == 0), margin=.025)
+
+    rect(slide, .65, 4.88, 12.04, 1.72, WHITE, line=LINE)
+    visual_titles = {"network": "SƠ ĐỒ MẠNG GNS3", "architecture": "KIẾN TRÚC TỔNG THỂ",
+                     "cover": "LUỒNG ĐIỀU HÀNH", "testmatrix": "MA TRẬN KIỂM THỬ"}
+    visual_title = visual_titles.get(model["visual"]["kind"], visual_name(model["visual"]["kind"]))
+    large_text(slide, "GỢI Ý TRỰC QUAN  ·  " + visual_title.upper(),
+               .84, 4.94, 11.60, .33, size=20, col=TEAL_DARK, bold=True, margin=.01)
+    large_visual(slide, model, .86, 5.30, 11.62, 1.20)
+
+    rect(slide, .65, 6.74, 12.04, .53, NAVY, line=NAVY)
+    large_text(slide, model["evidence"], .82, 6.77, 11.68, .46,
+               size=20, col=WHITE, bold=True, margin=.025)
+    return slide
 
 
 if __name__ == "__main__":

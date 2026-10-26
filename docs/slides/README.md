@@ -1,6 +1,6 @@
 # Bộ slide thuyết trình QTMNC
 
-- [PowerPoint 22 slide](QTMNC_Executive_Thuyet_trinh.pptx): định dạng 16:9, chữ, sơ đồ và thẻ thông tin là các phần tử PowerPoint có thể chỉnh sửa.
+- [PowerPoint 22 slide](QTMNC_Executive_Thuyet_trinh.pptx): định dạng 16:9, cỡ chữ nhỏ nhất 20 pt, chữ và sơ đồ là các phần tử PowerPoint có thể chỉnh sửa.
 - [Dàn ý chi tiết 22 slide](QTMNC_Dan_y_22_slide.md): thông điệp, luận điểm, minh chứng, gợi ý trực quan và nguồn cho từng slide.
 - [Mã dựng bộ slide](build_presentation.py): dữ liệu nội dung và bố cục; dùng để tái tạo PPTX và dàn ý.
 
