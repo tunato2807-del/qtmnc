@@ -1,0 +1,2 @@
+-r requirements.txt
+pysnmp>=7.1,<8
