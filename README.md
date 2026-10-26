@@ -1,19 +1,27 @@
-# GNS3 Device Monitor — Python, SSH/SNMP, Telegram/Slack
+# Giám sát Linux qua GNS3 — bản dễ học
 
-Đề tài: **Hệ thống giám sát trạng thái thiết bị và gửi cảnh báo qua Telegram/Slack**.
-Windows chạy Python trong VS Code, đi qua mạng GNS3 để giám sát CPU, RAM, nhiệt
-độ và trạng thái interface của Linux VMware. Chọn SSH, SNMP hoặc hybrid; nhận
-cảnh báo khi lỗi và khi phục hồi, chu kỳ profile GNS3 mặc định 5 giây.
+**Windows chạy Python trong VS Code → GNS3 → SSH tới Linux → Telegram/Slack.**
+Chương trình xem CPU, RAM, nhiệt độ và trạng thái card mạng, gửi cảnh báo khi lỗi
+và khi phục hồi.
 
-**Bắt đầu tại [hướng dẫn GNS3 từng bước trên Windows](docs/GNS3_LAB.md).**
-Hướng dẫn gồm Virtual Network Editor, thêm NIC VMware, chọn local server,
-mapping Cloud, nối switch/VPCS, đặt IP Linux, SSH, SNMP và thử cảnh báo.
+**Làm theo [HUONG_DAN_DON_GIAN.md](HUONG_DAN_DON_GIAN.md), từ bước 1 đến bước 6.**
 
-![Mô hình GNS3](docs/diagrams/png/02-trien-khai-vmware.png)
+![Mô hình GNS3 đơn giản](docs/simple/topology.png)
 
-## Tải và cập nhật trong Terminal VS Code
+Chỉ **2 Cloud + 1 Ethernet switch** trong GNS3. Linux dùng 2 card VMware:
 
-Tải lần đầu:
+| Card Linux | Địa chỉ | Vai trò |
+|---|---|---|
+| ens33, NAT/VMnet8 | 192.168.73.129 nếu DHCP chưa đổi | Internet Linux và card được theo dõi |
+| gns3mgmt, VMnet2 | 192.168.10.129 | SSH qua GNS3 |
+
+Windows VMnet1 .10.1 → Cloud → switch → Cloud VMnet2 → Linux .10.129.
+Windows VMnet2 để .20.1 như hướng dẫn, để đường SSH đi qua GNS3.
+Chưa cần router, VPCS, GNS3 VM, SNMP agent hoặc card VMware thứ ba.
+
+## Tải hoặc cập nhật
+
+Tải lần đầu trong Terminal VS Code:
 
 ~~~powershell
 git clone https://github.com/tunato2807-del/qtmnc.git
@@ -21,7 +29,7 @@ cd qtmnc
 code .
 ~~~
 
-Nếu đã có dự án tại đường dẫn cũ:
+Bạn đã có dự án:
 
 ~~~powershell
 cd D:\QTM_NC\telegram\qtmnc
@@ -29,112 +37,60 @@ git fetch origin
 git merge --ff-only origin/main
 ~~~
 
-Không thêm số "1." trước lệnh. Cần Git và Python 3.10+ trên Windows.
-Nếu có thay đổi cục bộ, giữ lại và xử lý trước khi merge; không reset --hard.
+Không chép số thứ tự hoặc dấu PS ...> trước lệnh. Nếu Git báo có sửa đổi cục bộ,
+giữ lại và xử lý trước khi merge; không reset --hard.
 
-## Lab được thiết kế
+## Cài và chạy
 
-| Đường | Thành phần |
-|---|---|
-| Quản trị | Windows VMnet1 .10.1 → Cloud → SW-MANAGEMENT → Cloud VMnet2 → Linux gns3mgmt .10.129 |
-| Interface thử | Linux gns3test .30.129 → Cloud VMnet3 → SW-TEST → VPCS .30.10 |
-| NAT dự phòng | Linux ens33 .73.129 → VMnet8, gateway .73.2 |
-
-Subnet đầy đủ lần lượt là 192.168.10.0/24, 192.168.30.0/24, 192.168.73.0/24.
-Windows VMnet2 dùng 192.168.20.1 để không tạo đường .10 trực tiếp bỏ qua GNS3.
-Ba Cloud, hai Ethernet switch và một VPCS chạy trên **GNS3 local server Windows**;
-Ubuntu vẫn chạy bên ngoài trong VMware. Không cần image router hoặc GNS3 VM.
-
-## Cài và chạy sau khi đã nối mạng
+Sau khi nối mạng và SSH được 192.168.10.129 theo hướng dẫn:
 
 ~~~powershell
 .\setup_windows.cmd --configure
-.\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3 --test-notifications
+.\run_windows.cmd --test
 .\run_windows.cmd
 ~~~
 
-Wizard tạo .venv, cài thư viện, hỏi giao thức/kênh cảnh báo, lưu secret vào
-.env.gns3 và kiểm tra SSH nếu có. Đích mặc định 192.168.10.129, user tuanto,
-interface gns3test. Lấy fingerprint từ console Linux để xác minh host key.
-Có thể dán toàn dòng ssh-keygen; password nhập ở ô mật khẩu, không nhập vào ô
-chọn phương thức xác thực. Secret không hiện ký tự khi gõ và không được commit.
+Windows cần Python 3.10+. Bộ cài tự tạo .venv và cài thư viện SSH, HTTP, dotenv,
+Rich; không cần cài SNMP cho bản này. Chỉ hỏi IP, tài khoản, card mạng, mật khẩu
+và nơi nhận tin. Cấu hình lưu ở .env.simple, tự lấy lại secret từ file cũ cục bộ.
+Mật khẩu gõ không hiện ký tự là bình thường.
 
-F5 trong VS Code chạy cùng profile. Bản cũ dùng .env vẫn có thể chạy:
-python monitor_ssh.py --env-file .env. Không tự chép secret cũ vào profile mới.
+--test gửi tin thử thật. --once đọc một lần rồi dừng. F5 chạy cùng bản này.
+Mỗi vòng đọc xong chờ 5 giây. Ctrl+C dừng; tin chưa gửi được giữ để thử lại.
+Token/mật khẩu không nằm trong code và không được đẩy GitHub.
 
-Các lệnh riêng:
+## Đọc code theo thứ tự
 
-~~~powershell
-.\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3 --check-config
-.\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3 --once
-.\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3 --display table
-~~~
+1. Mở **monitor.py**: luồng chính được đánh dấu bốn bước.
+2. Xem **examples/simple.env** để biết các giá trị cấu hình.
+3. Sửa ngưỡng trong **.env.simple** do bộ cài tạo.
+4. Khi cần hiểu chi tiết, đọc dần thư mục device_monitor.
 
---check-config không kết nối thiết bị hoặc gửi tin. --test-notifications gửi
-tin TEST thật qua các kênh cấu hình. --once lấy một mẫu và thử gửi tin đến hạn.
---display log dành cho log gọn; auto dùng bảng Rich cập nhật tại chỗ khi có TTY.
-Ctrl+C dừng an toàn, tin chưa gửi vẫn còn trên đĩa.
+Chi tiết SSH, tính chỉ số và gửi lại tin dùng phần mã đã kiểm thử.
+File monitor.py tập trung vào luồng chạy để bạn dễ học và trình bày.
 
-## Đủ bốn chỉ số, hai giao thức, hai kênh
+| Mặc định | Cảnh báo | Phục hồi |
+|---|---|---|
+| CPU | >75% | <=70% |
+| RAM | >65% | <=60% |
+| Nhiệt độ | >65°C | <=60°C |
+| Interface | DOWN | UP |
 
-| Chức năng | Thực hiện |
-|---|---|
-| CPU/RAM | CPU từ chênh lệch /proc/stat, RAM từ MemAvailable |
-| Nhiệt độ | Cảm biến Linux thật hoặc demo có nhãn; thiếu dữ liệu là UNKNOWN |
-| Interface | SSH đọc operstate; SNMP đọc IF-MIB theo ifName/ifIndex |
-| SNMP Linux | Net-SNMP extend JSON cho CPU/RAM/nhiệt; agent read-only riêng |
-| Hybrid | SSH ưu tiên tài nguyên, SNMP ưu tiên interface; dự phòng và báo mất từng dịch vụ |
-| Telegram/Slack | Chọn một hoặc cả hai, xác nhận thành công theo API |
-| Chống spam | Chỉ báo chuyển trạng thái; hysteresis khi phục hồi |
-| Retry | SQLite outbox bền vững, backoff, xử lý 429, giữ tin qua restart |
-| Giao diện | Số làm tròn, nguồn dữ liệu, trạng thái/ngưỡng, hàng đợi từng kênh |
-| Lab | Project GNS3 mẫu, netplan theo MAC, công cụ tạo CPU/RAM/DOWN/nhiệt demo có hạn |
+VM thường không có cảm biến nhiệt độ, nên UNKNOWN là đúng. Có thể chủ động tắt,
+hoặc dùng demo có nhãn MÔ PHỎNG theo hướng dẫn; không giả thành số đo phần cứng.
+Chỉ gửi khi đổi trạng thái, tránh lặp tin mỗi vòng. Đây là polling gần thời gian
+thực; mạng chậm và retry có thể làm tin tới muộn.
 
-Ngưỡng: CPU >75%, RAM >65%, nhiệt độ >65°C; margin=5 nên phục hồi lần lượt
-<=70%, <=60%, <=60°C. Mạng polling cho cảnh báo **gần thời gian thực**, không
-bảo đảm thời hạn cứng. VM thường không có nhiệt độ CPU vật lý: auto báo UNKNOWN;
-demo luôn ghi MÔ PHỎNG trên bảng và tin nhắn. Không trình bày demo thành số đo thật.
+## Khi cần mở rộng
 
-SNMPv2c được chọn rõ cho lab tách biệt. Chương trình hỗ trợ v3 authPriv SHA/AES
-khi agent đã có user tương ứng; installer lab chỉ cấp cấu hình v2c read-only.
-Thiết bị hãng khác dùng SNMP_PROFILE=custom và OID đã đối chiếu MIB.
+- [Hướng dẫn SNMP/hybrid, mạng thử riêng](docs/GNS3_LAB.md).
+- [Thiết kế chi tiết](docs/ARCHITECTURE.md).
+- [Kịch bản nghiệm thu mở rộng](docs/TEST_PLAN.md).
+- [Bộ 8 sơ đồ Word/PDF của mô hình mở rộng](docs/diagrams/README.md).
 
-## Cấu trúc và tài liệu
+Bản đơn giản chọn SSH cho hướng đề tài "SNMP/SSH". Nếu bắt buộc cả hai giao thức,
+dùng bản mở rộng: py -3 setup_project.py --profile gns3 --configure, rồi
+python -m device_monitor --env-file .env.gns3. .env và .env.gns3 cũ được giữ nguyên.
 
-~~~text
-device_monitor/       CLI, collectors, engine, SQLite, notification, Rich UI
-examples/gns3.env      profile mẫu, không có secret
-lab/gns3/             project GNS3 có sẵn
-lab/linux/            cấu hình NIC, agent SNMP, công cụ tạo tải thử
-tools/                sinh project GNS3
-docs/GNS3_LAB.md       hướng dẫn triển khai từng bước
-docs/ARCHITECTURE.md   thiết kế, nguồn chỉ số, quy tắc và giới hạn
-docs/TEST_PLAN.md      kịch bản nghiệm thu và bằng chứng cần chụp
-docs/diagrams/         Word/PDF, PNG/SVG và nguồn Mermaid/Graphviz
-tests/                unit test và tích hợp giao thức loopback
-~~~
-
-- [Hướng dẫn GNS3 chi tiết](docs/GNS3_LAB.md)
-- [Thiết kế hệ thống](docs/ARCHITECTURE.md)
-- [Kiểm thử và kịch bản demo](docs/TEST_PLAN.md)
-- [8 sơ đồ cho báo cáo, Word và PDF](docs/diagrams/README.md)
-- [Tham khảo cấu hình nâng cao của bản trước](docs/legacy/README_CLASSIC.md)
-
-Các hướng dẫn WINDOWS_TO_LINUX.md / LINUX_VM_TO_WINDOWS.md mô tả đường NAT
-trực tiếp của bản trước; dùng GNS3_LAB.md cho quy trình mới.
-
-## Kiểm thử và giới hạn
-
-~~~powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-.\.venv\Scripts\python.exe -m pip check
-~~~
-
-requirements-tested.txt ghi phiên bản đã kiểm thử. Bộ test dùng mock và dịch vụ
-loopback; có SNMPv2c/v3 GET/GETNEXT thật. Không gửi Telegram/Slack thật và không
-truy cập máy của bạn. Project được kiểm tra theo schema GNS3, nhưng VMware,
-Npcap, firewall và mapping Cloud cần nghiệm thu trên Windows thực tế.
-
-Một tiến trình/một state file; không lưu lịch sử toàn bộ số đo để vẽ biểu đồ.
-Outbox gửi theo cơ chế at least once nên có thể trùng tin khi phản hồi bị mất.
-Windows ngủ/tắt có thể dừng cả GNS3 và VM. Chi tiết trong ARCHITECTURE.md.
+Kiểm thử: python -m unittest discover -s tests -v. Bộ test dùng mock/loopback,
+không gửi tin tới tài khoản thật. GNS3/Npcap/VMware cần kiểm tra trên Windows.

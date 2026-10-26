@@ -1,0 +1,11 @@
+flowchart TB
+    W["Windows: VS Code + Python<br/>VMnet1: 192.168.10.1"]
+    subgraph G["GNS3 local Windows"]
+      C1["Cloud WINDOWS<br/>VMnet1"] --- S["Ethernet SWITCH"]
+      S --- C2["Cloud LINUX<br/>VMnet2"]
+    end
+    L["Ubuntu VMware<br/>gns3mgmt: 192.168.10.129<br/>ens33 NAT: 192.168.73.129"]
+    A["Telegram / Slack"]
+    W <-->|"SSH TCP22"| C1
+    C2 <--> L
+    W -->|"HTTPS"| A

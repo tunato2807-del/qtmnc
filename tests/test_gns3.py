@@ -2,6 +2,7 @@
 import asyncio
 from contextlib import asynccontextmanager,redirect_stdout
 import io
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -139,6 +140,7 @@ class GNS3Tests(unittest.TestCase):
         for link in data["topology"]["links"]:
             self.assertTrue(all(p["node_id"] in ids for p in link["nodes"]))
 
+    @unittest.skipUnless(importlib.util.find_spec("pysnmp"), "SNMP là tùy chọn trong bản đơn giản")
     def test_linux_snmp_payload_and_if_mib_independent(self):
         c=config(protocol="snmp")
         collector=SNMPCollector(c)
@@ -158,6 +160,7 @@ class GNS3Tests(unittest.TestCase):
         self.assertIsNone(sample.values["ram"])
         self.assertEqual(sample.values["iface"],"down")
 
+    @unittest.skipUnless(importlib.util.find_spec("pysnmp"), "SNMP là tùy chọn trong bản đơn giản")
     def test_changed_ifindex_is_verified_then_rediscovered(self):
         collector=SNMPCollector(config(protocol="snmp"))
         collector.ifindex=2

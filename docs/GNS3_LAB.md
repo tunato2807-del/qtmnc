@@ -1,3 +1,9 @@
+# Bản mở rộng: SNMP/hybrid và mạng thử riêng
+
+> Muốn ít bước hơn: làm [bản đơn giản — 2 Cloud, 1 switch](../HUONG_DAN_DON_GIAN.md).
+> Launcher setup_windows.cmd / run_windows.cmd và F5 hiện dành cho .env.simple.
+> Tài liệu này gọi rõ --profile gns3 và .env.gns3 để giữ mô hình mở rộng.
+
 # Thực hành GNS3: Windows/VS Code giám sát Linux bằng SSH và SNMP
 
 Hướng dẫn cho **Windows đã cài GNS3 và VMware Workstation**, Ubuntu 22.04/24.04
@@ -301,7 +307,7 @@ Không cần bật UFW chỉ để thực hành; nếu chưa bật thì không t
 Trong Windows, thư mục dự án:
 
 ~~~powershell
-.\setup_windows.cmd --configure
+py -3 setup_project.py --profile gns3 --configure
 ~~~
 
 Wizard tạo .venv, cài thư viện và lưu .env.gns3. Chọn:
@@ -336,13 +342,13 @@ Chọn both nếu muốn kiểm thử nhận trên cả hai ứng dụng.
 .\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3 --check-config
 .\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3 --test-notifications
 .\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3 --once
-.\run_windows.cmd
+.\.venv\Scripts\python.exe -m device_monitor --env-file .env.gns3
 ~~~
 
 --check-config chỉ kiểm tra cấu hình, không chứng minh mạng/credential hợp lệ.
 --test-notifications **thực sự gửi tin TEST** tới các kênh đã cấu hình.
---once thu thập một chu kỳ và có thể gửi cảnh báo thực. Sau đó F5 trong VS Code
-hoặc run_windows.cmd để xem bảng cập nhật. Chu kỳ profile GNS3 là 5 giây.
+--once thu thập một chu kỳ và có thể gửi cảnh báo thực. Sau đó dùng lệnh ở trên
+để xem bảng cập nhật. Chu kỳ profile GNS3 là 5 giây.
 Ctrl+C dừng; tin chưa gửi còn trong SQLite để thử lại lần chạy sau.
 
 ## 9. Thêm SNMP, rồi chuyển sang hybrid
@@ -368,7 +374,7 @@ Sau khi đổi file chương trình, chạy lại installer để sao chép bả
 ### 9.2 Trên Windows
 
 ~~~powershell
-.\setup_windows.cmd --configure
+py -3 setup_project.py --profile gns3 --configure
 ~~~
 
 Chọn snmp để kiểm tra riêng: profile linux-extend, version 2c, port 161,
@@ -394,7 +400,7 @@ Installer ở trên chưa tự cấp user v3. Không mở UDP 161 ra Internet.
 
 ## 10. Kiểm thử cảnh báo có thời hạn
 
-Giữ Windows đang run_windows.cmd. Chạy các lệnh sau **trên Ubuntu** từ console
+Giữ Windows đang chạy monitor mở rộng với --env-file .env.gns3. Chạy các lệnh sau **trên Ubuntu** từ console
 VMware hoặc một phiên SSH khác; thực hiện từng ca, chờ phục hồi rồi mới ca tiếp.
 
 ~~~bash

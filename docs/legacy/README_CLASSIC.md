@@ -2,7 +2,7 @@
 
 > Tài liệu lưu tham khảo bản NAT trực tiếp trước khi chuyển GNS3.
 > Quy trình mới: [GNS3_LAB.md](../GNS3_LAB.md).
-> Launcher Windows hiện dùng .env.gns3; nếu giữ lab cũ, gọi trực tiếp
+> Launcher Windows hiện dùng .env.simple; nếu giữ lab cũ, gọi trực tiếp
 > python setup_project.py --profile classic và python monitor_ssh.py --env-file .env.
 
 Bản sửa của `monitor_ssh.py`, dùng Python 3.10 trở lên. Mỗi tiến trình giám sát

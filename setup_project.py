@@ -59,6 +59,48 @@ def save_settings(path, updates):
         Path(temporary).unlink(missing_ok=True)
 
 
+def configure_simple(path):
+    """Only ask what a first SSH lab needs; reuse locally saved secrets."""
+    from dotenv import dotenv_values
+    from device_monitor.config import Config, ConfigError
+    path = Path(path)
+    values = dict(dotenv_values(ROOT / "examples/simple.env", interpolate=False, encoding="utf-8-sig"))
+    if path.exists():
+        values.update({k: v for k, v in dotenv_values(path, interpolate=False, encoding="utf-8-sig").items() if v is not None})
+    else:
+        # Keep the new lab's host/interface defaults. Reuse only local credentials.
+        keys = ("SSH_USER", "SSH_PASSWORD", "SSH_KNOWN_HOSTS",
+                "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID", "SLACK_WEBHOOK_URL")
+        for old in (ROOT / ".env", ROOT / ".env.gns3"):
+            if old.is_file():
+                saved = dotenv_values(old, interpolate=False, encoding="utf-8-sig")
+                values.update({k: saved[k] for k in keys if saved.get(k)})
+    values["MONITOR_PROTOCOL"], values["MONITOR_OS"] = "ssh", "linux"
+    values["SSH_KEY_FILE"] = ""
+    print("\nBản đơn giản: Windows -> GNS3 -> Linux, thu thập bằng SSH.")
+    print(f"Mật khẩu/token chỉ lưu trên máy bạn trong {path.name}.")
+    values["MONITOR_HOST"] = ask("IP Linux qua GNS3", values["MONITOR_HOST"])
+    values["SSH_USER"] = ask("Tài khoản Linux", values["SSH_USER"])
+    values["MONITOR_IFACE"] = ask("Card mạng cần xem trạng thái", values["MONITOR_IFACE"])
+    values["SSH_PASSWORD"] = ask_secret("Mật khẩu Linux", values.get("SSH_PASSWORD", ""))
+    if not values["SSH_PASSWORD"]:
+        raise SetupError("Chưa nhập mật khẩu Linux")
+    default = "both" if values.get("TELEGRAM_TOKEN") and values.get("SLACK_WEBHOOK_URL") else "slack" if values.get("SLACK_WEBHOOK_URL") else "telegram"
+    channel = choose("Nhận tin: telegram/slack/both", ("telegram", "slack", "both"), default)
+    if channel in {"telegram", "both"}:
+        values["TELEGRAM_TOKEN"] = ask_secret("Token Telegram", values.get("TELEGRAM_TOKEN", ""))
+        values["TELEGRAM_CHAT_ID"] = ask("Telegram chat ID", values.get("TELEGRAM_CHAT_ID", ""))
+    else:
+        values["TELEGRAM_TOKEN"] = values["TELEGRAM_CHAT_ID"] = ""
+    values["SLACK_WEBHOOK_URL"] = ask_secret("Slack Webhook", values.get("SLACK_WEBHOOK_URL", "")) if channel in {"slack", "both"} else ""
+    try:
+        Config.from_env(values)
+    except ConfigError as exc:
+        raise SetupError(str(exc)) from None
+    save_settings(path, values)
+    print("Đã lưu cấu hình. Nhiệt độ VM thiếu cảm biến sẽ hiện KHÔNG XÁC ĐỊNH.")
+
+
 def configure(path,preset=None):
     from dotenv import dotenv_values
     from monitor_ssh import Config, ConfigError
@@ -182,7 +224,7 @@ def verify_ssh(config):
         ssh.close()
 
 
-def install_dependencies(root=ROOT):
+def install_dependencies(root=ROOT, requirements="requirements.txt"):
     root = Path(root)
     directory = root / ".venv"
     python = directory / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
@@ -191,26 +233,26 @@ def install_dependencies(root=ROOT):
     if not directory.exists():
         print("Đang tạo môi trường Python .venv...")
         venv.EnvBuilder(with_pip=True).create(directory)
-    subprocess.run([str(python), "-m", "pip", "install", "-r", str(root / "requirements.txt")], check=True, cwd=root)
+    subprocess.run([str(python), "-m", "pip", "install", "-r", str(root / requirements)], check=True, cwd=root)
     return python
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--configure", action="store_true", help="Chỉnh lại cấu hình đã lưu")
-    parser.add_argument("--profile", choices=("classic","gns3"),default="classic")
+    parser.add_argument("--profile", choices=("classic","gns3","simple"),default="classic")
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--skip-ssh-check", action="store_true", help="Chỉ chuẩn bị cấu hình; chưa xác minh SSH")
     parser.add_argument("--finish", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     if args.env_file is None:
-        args.env_file=ROOT/(".env.gns3" if args.profile=="gns3" else ".env")
+        args.env_file=ROOT/{"classic":".env","gns3":".env.gns3","simple":".env.simple"}[args.profile]
     if sys.version_info < (3, 10):
         print("Cần Python 3.10 trở lên.", file=sys.stderr)
         return 2
     try:
         if not args.finish:
-            python = install_dependencies()
+            python = install_dependencies(requirements="requirements-simple.txt" if args.profile=="simple" else "requirements.txt")
             command = [str(python), str(ROOT / "setup_project.py"), "--finish", "--profile",args.profile,"--env-file", str(args.env_file.absolute())]
             if args.configure:
                 command.append("--configure")
@@ -218,7 +260,10 @@ def main(argv=None):
                 command.append("--skip-ssh-check")
             return subprocess.call(command, cwd=ROOT)
         if args.configure or not args.env_file.exists():
-            configure(args.env_file,ROOT/"examples/gns3.env" if args.profile=="gns3" else None)
+            if args.profile=="simple":
+                configure_simple(args.env_file)
+            else:
+                configure(args.env_file,ROOT/"examples/gns3.env" if args.profile=="gns3" else None)
         else:
             print("Giữ cấu hình đã có. Dùng --configure nếu muốn thay đổi.")
         from monitor_ssh import Config, ConfigError, load_environment_file
@@ -235,7 +280,10 @@ def main(argv=None):
                 print("Chưa đo thử SNMP. Chạy --once để kiểm tra agent, community/user và UDP thực tế.")
         else:
             print("Chưa kiểm tra kết nối, host key hoặc đăng nhập SSH.")
-        print("\nĐã hoàn tất bước chuẩn bị. Trên Windows chạy: .\\run_windows.cmd")
+        if args.profile == "simple":
+            print("\nĐã hoàn tất. Trên Windows chạy: .\\run_windows.cmd")
+        else:
+            print(f'\nĐã hoàn tất. Chạy: python -m device_monitor --env-file "{args.env_file}"')
         return 0
     except (KeyboardInterrupt, EOFError):
         print("\nĐã dừng cài đặt; giữ nguyên cấu hình đã lưu.", file=sys.stderr)

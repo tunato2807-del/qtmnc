@@ -16,7 +16,7 @@ def uid(name):
 
 
 def project(names=None):
-    names=names or {n:f"VMware Network Adapter VMnet{n}" for n in (1,2,3)}
+    names={**{n:f"VMware Network Adapter VMnet{n}" for n in (1,2,3)}, **(names or {})}
     nodes=[]
     def node(name,kind,x,y,properties,symbol):
         value={"name":name,"node_id":uid(name),"node_type":kind,"compute_id":"local",
@@ -49,7 +49,23 @@ def project(names=None):
                         "nodes":nodes,"links":links,"drawings":[]}}
 
 
-def local_interfaces(url):
+def simple_project(names=None):
+    """The SSH lab needs only the management path: two Clouds and one switch."""
+    value = project(names)
+    keep = {"WINDOWS-VMNET1", "SW-MANAGEMENT", "LINUX-MGMT-VMNET2"}
+    nodes = [node for node in value["topology"]["nodes"] if node["name"] in keep]
+    ids = {node["node_id"] for node in nodes}
+    value["name"] = "QTMNC_SIMPLE"
+    value["project_id"] = uid("simple-project")
+    value["topology"]["nodes"] = nodes
+    value["topology"]["links"] = [
+        link for link in value["topology"]["links"]
+        if all(end["node_id"] in ids for end in link["nodes"])
+    ]
+    return value
+
+
+def local_interfaces(url, indices=(1,2,3)):
     parsed=urllib.parse.urlsplit(url)
     if parsed.scheme not in {"http","https"} or parsed.hostname not in {"localhost","127.0.0.1","::1"} or parsed.username or parsed.password:
         raise ValueError("Chỉ đọc API GNS3 local server, không đưa credential vào URL")
@@ -57,7 +73,7 @@ def local_interfaces(url):
     with urllib.request.urlopen(request,timeout=5) as response:
         items=json.load(response)
     names={}
-    for index in (1,2,3):
+    for index in indices:
         matches=[item["name"] for item in items if str(item.get("name","")).lower().endswith(f"vmnet{index}")]
         if len(matches)!=1:
             raise ValueError(f"Chưa tìm thấy duy nhất VMnet{index}; tạo adapter trong VMware trước")
@@ -67,17 +83,22 @@ def local_interfaces(url):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--output",type=Path,default=ROOT/"lab/generated/QTMNC_GNS3_MONITOR/QTMNC_GNS3_MONITOR.gns3")
+    p.add_argument("--output",type=Path)
     p.add_argument("--check-local-api",action="store_true",help="Kiểm tra tên VMnet qua API GNS3 đang mở")
+    p.add_argument("--simple", action="store_true", help="Chỉ hai Cloud và một switch")
     p.add_argument("--server",default="http://127.0.0.1:3080")
     a=p.parse_args()
+    if a.output is None:
+        name="QTMNC_SIMPLE" if a.simple else "QTMNC_GNS3_MONITOR"
+        a.output=ROOT/"lab/generated"/name/(name+".gns3")
     if a.output.exists():
         p.error("File đã tồn tại; chọn --output mới để giữ công việc GNS3 đã chỉnh")
-    value=project(local_interfaces(a.server) if a.check_local_api else None)
+    names=local_interfaces(a.server, (1,2) if a.simple else (1,2,3)) if a.check_local_api else None
+    value=(simple_project if a.simple else project)(names)
     a.output.parent.mkdir(parents=True,exist_ok=True)
     a.output.write_text(json.dumps(value,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(a.output)
-    print("Mở file này trong GNS3 local server; kiểm tra ba Cloud đúng VMnet1/2/3.")
+    print("Mở file này trong GNS3 local server; kiểm tra Cloud đúng VMnet1/2" + ("." if a.simple else "/3."))
     print("Linux VM chạy riêng trong VMware, không được tự tạo hay tự bật bởi file lab.")
     print("Đọc docs/GNS3_LAB.md trước khi đổi card mạng hoặc nối link.")
 

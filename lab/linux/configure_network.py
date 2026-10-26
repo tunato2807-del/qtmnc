@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create only the two extra GNS3 NIC definitions. Preserve the existing NAT NIC."""
+"""Create one management NIC, optionally one test NIC. Preserve the NAT NIC."""
 import argparse
 import json
 import os
@@ -11,13 +11,13 @@ import sys
 import time
 
 
-def netplan_text(management_mac,test_mac):
-    for mac in (management_mac,test_mac):
+def netplan_text(management_mac,test_mac=None):
+    for mac in (management_mac,)+((test_mac,) if test_mac else ()):
         if not re.fullmatch(r"(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}",mac):
             raise ValueError("MAC không hợp lệ")
-    if management_mac.lower()==test_mac.lower():
+    if test_mac and management_mac.lower()==test_mac.lower():
         raise ValueError("Hai card phải khác MAC")
-    return f"""# Only extra lab NICs; no gateway/default route is added.
+    text = f"""# Only extra lab NICs; no gateway/default route is added.
 network:
   version: 2
   ethernets:
@@ -29,6 +29,9 @@ network:
       dhcp6: false
       addresses: [192.168.10.129/24]
       optional: true
+"""
+    if test_mac:
+        text += f"""
     gns3test:
       match:
         macaddress: "{test_mac.lower()}"
@@ -38,12 +41,13 @@ network:
       addresses: [192.168.30.129/24]
       optional: true
 """
+    return text
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--management-iface",required=True)
-    p.add_argument("--test-iface",required=True)
+    p.add_argument("--test-iface", help="Bỏ qua trong mô hình đơn giản")
     a=p.parse_args()
     if sys.platform!="linux" or os.geteuid()!=0:
         p.error("Chạy sudo từ console máy ảo Ubuntu")
@@ -51,12 +55,12 @@ def main():
     if not defaults:
         p.error("Chưa có default route NAT; kiểm tra card NAT trước khi thêm mạng lab")
     protected={row.get("dev") for row in defaults}|{"lo"}
-    for iface in (a.management_iface,a.test_iface):
+    for iface in [a.management_iface]+([a.test_iface] if a.test_iface else []):
         if not re.fullmatch(r"[A-Za-z0-9_.:@-]{1,64}",iface) or iface in protected:
             p.error("Không chọn loopback hoặc card NAT/default route; kiểm tra MAC và ip -br link")
     root=Path("/sys/class/net")
     management=(root/a.management_iface/"address").read_text().strip()
-    test=(root/a.test_iface/"address").read_text().strip()
+    test=(root/a.test_iface/"address").read_text().strip() if a.test_iface else None
     text=netplan_text(management,test)
     destination=Path("/etc/netplan/90-qtmnc-gns3.yaml")
     before=destination.read_bytes() if destination.exists() else None
@@ -74,9 +78,9 @@ def main():
         else:
             destination.write_bytes(before)
         raise
-    print("Đã tạo netplan cho gns3mgmt / gns3test; chưa đổi mạng đang chạy.")
+    print("Đã tạo netplan cho gns3mgmt" + (" / gns3test" if test else "") + "; chưa đổi mạng đang chạy.")
     print("Từ console VMware chạy: sudo netplan try --timeout 60")
-    print("Kiểm tra rồi Enter xác nhận. Không thêm gateway cho hai NIC lab.")
+    print("Kiểm tra rồi Enter xác nhận. Không thêm gateway cho NIC lab.")
     print("NAT/default route hiện tại được giữ bằng cấu hình riêng có sẵn.")
 
 

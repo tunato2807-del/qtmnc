@@ -1,0 +1,19 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad=".3", ranksep=".6", nodesep=".4", fontname="Noto Sans"];
+  node [shape=box, style="rounded,filled", fillcolor="#eaf2ff", color="#2563eb", fontname="Noto Sans", fontsize=15, margin=".2,.14"];
+  edge [color="#64748b", fontname="Noto Sans", fontsize=12, fontcolor="#334155"];
+  windows [group="windows",label="WINDOWS — VS CODE + PYTHON\nVMnet1: 192.168.10.1\nChạy monitor.py"];
+  subgraph cluster_gns3 {
+    label="GNS3 LOCAL SERVER WINDOWS — CHỈ 3 BIỂU TƯỢNG"; fontname="Noto Sans"; fontsize=15; color="#f59e0b"; style=rounded;
+    c1 [group="windows",label="Cloud WINDOWS\nVMnet1"];
+    sw [label="Ethernet SWITCH"];
+    c2 [label="Cloud LINUX\nVMnet2"];
+    {rank=same;c1;sw;c2}
+    c1 -> sw -> c2 [dir=none];
+  }
+  linux [label="UBUNTU VM TRONG VMWARE\ngns3mgmt: 192.168.10.129 — SSH\nens33: 192.168.73.129 — NAT / card theo dõi",fillcolor="#ecfdf5",color="#059669"];
+  telegram [label="Telegram / Slack\nNhận cảnh báo và phục hồi",fillcolor="#f1f5f9",color="#64748b"];
+  windows -> c1 [group="windows",label="SSH TCP 22",dir=both];
+  c2 -> linux [label="Card thứ hai: Custom VMnet2",dir=both];
+  windows -> telegram [label="HTTPS qua Internet"];
+}

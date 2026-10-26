@@ -4,7 +4,8 @@ Kết quả trong môi trường phát triển Linux ngày 26/10/2026:
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Python unittest discover | 100 tests, OK |
+| Python unittest discover | 107 tests, OK |
+| Bản đơn giản | Wizard giữ secret cục bộ, lab 3 node, runner SSH, retry khi gửi lỗi; chạy được khi chặn import SNMP |
 | pip check | Không có dependency hỏng |
 | SSH loopback | Thu thập thật, từ chối khóa lạ/khóa thay đổi, chấp nhận fingerprint đúng |
 | SNMPv2c/v3 loopback | GET/GETNEXT thật, JSON extend, tìm ifIndex và DOWN → UP |
