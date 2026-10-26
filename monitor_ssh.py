@@ -36,6 +36,18 @@ class DeviceUnavailable(Exception):
     pass
 
 
+def load_environment_file(path=None):
+    """Load local settings as data, without shell execution or variable expansion."""
+    file = Path(path).expanduser().resolve() if path else Path(__file__).resolve().with_name(".env")
+    if path and not file.is_file():
+        raise ConfigError("Không tìm thấy file cấu hình --env-file")
+    if file.is_file():
+        from dotenv import load_dotenv
+        # An explicitly selected profile wins over inherited terminal variables.
+        # With the default .env, intentional command-level env overrides still work.
+        load_dotenv(file, override=path is not None, interpolate=False, encoding="utf-8-sig")
+
+
 def number(value, minimum=None, maximum=None):
     try:
         result = float(value)
@@ -654,11 +666,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--once", action="store_true", help="Thu thập một lần và thử gửi các cảnh báo đang đến hạn")
     parser.add_argument("--check-config", action="store_true", help="Kiểm tra cấu hình/dependency mà không kết nối thiết bị hay gửi tin")
+    parser.add_argument("--env-file", help="Chọn file dotenv ưu tiên hơn biến môi trường; mặc định .env cạnh script, ưu tiên biến môi trường")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     channels, worker = [], None
     stop = threading.Event()
     try:
+        load_environment_file(args.env_file)
         config = Config.from_env()
         collector = SSHCollector(config) if config.protocol == "ssh" else SNMPCollector(config)
         if config.telegram_token:

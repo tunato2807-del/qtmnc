@@ -48,7 +48,7 @@ def ssh_device():
 
         def check_channel_exec_request(self, channel, command):
             command = command.decode()
-            allowed = {m.SSHCollector.CPU_CMD, "cat /proc/meminfo", "cat /sys/class/net/lo/operstate"}
+            allowed = {m.SSHCollector.CPU_CMD, "cat /proc/meminfo", "cat /sys/class/net/lo/operstate", "exit"}
             if command not in allowed:
                 return False
 

@@ -174,8 +174,8 @@ TELEGRAM_CHAT_ID='DIEN_CHAT_ID'
 
 Điền các giá trị DIEN_... thực tế vào .env. Nếu dùng key, để SSH_PASSWORD=''
 và điền SSH_KEY_FILE. Các credential trong file gốc đã được chia sẻ cần đổi mới.
-Giá trị .env dùng cú pháp Bash: nháy đơn bảo toàn phần lớn ký tự đặc biệt; nếu
-giá trị chứa chính dấu nháy đơn, cần escape đúng Bash.
+File .env tự được đọc bằng dotenv, không chạy shell hoặc nội suy biến. Có thể
+dùng bộ cấu hình để ghi đúng secret chứa ký tự đặc biệt. Không cần source file.
 
 Nhiệt độ tạm tắt rõ ràng vì Windows không có API CPU temperature thống nhất.
 Muốn bật, cần LibreHardwareMonitor WMI và phần cứng hỗ trợ, xem README.
@@ -190,9 +190,6 @@ Trong cùng Terminal Linux:
 
 ~~~bash
 cd ~/qtmnc
-set -a
-. ./.env
-set +a
 .venv/bin/python monitor_ssh.py --check-config
 .venv/bin/python monitor_ssh.py --once
 ~~~
@@ -210,8 +207,8 @@ Giám sát liên tục:
 .venv/bin/python monitor_ssh.py
 ~~~
 
-Ctrl+C dừng; chu kỳ mặc định 30 giây. Terminal mới hoặc sau khi sửa .env phải
-nạp lại cấu hình. File .env không tự nạp chỉ bằng lệnh Python.
+Ctrl+C dừng; chu kỳ mặc định 30 giây. Sau khi sửa .env, khởi động lại chương trình
+để đọc cấu hình mới. Terminal mới không cần khai báo lại các biến trong file.
 
 ## 8. Thử cảnh báo có kiểm soát
 

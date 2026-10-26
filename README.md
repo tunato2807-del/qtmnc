@@ -6,7 +6,9 @@ cả hai**. Máy chạy script cần truy cập mạng được tới thiết b�
 dịch vụ nhắn tin. Thiết bị đích SSH có thể là Linux (`MONITOR_OS=linux`, mặc định)
 hoặc Windows 10/11 có OpenSSH Server và Windows PowerShell 5.1 (`MONITOR_OS=windows`).
 
-**[Hướng dẫn từng bước: máy ảo Linux giám sát máy thật Windows qua VMware NAT](LINUX_VM_TO_WINDOWS.md)**
+**[Bắt đầu trên Windows/VS Code: giám sát Linux VM, tải và cài bằng một lệnh](WINDOWS_TO_LINUX.md)**
+
+Chiều ngược lại: [Linux VM giám sát Windows qua VMware NAT](LINUX_VM_TO_WINDOWS.md).
 
 ## Các lỗi đã sửa
 
@@ -47,10 +49,15 @@ chmod 600 .env
 .venv/bin/python -m pip install -r requirements-snmp.txt
 ```
 
-Windows PowerShell: dùng `py -m venv .venv`, sau đó thay `.venv/bin/python` bằng
-`.venv\Scripts\python.exe`. Có thể đặt trực tiếp biến môi trường trong phiên
-PowerShell, ví dụ `$env:MONITOR_HOST = 'IP_THIET_BI'`; file `.env` không được tự
-động nạp bởi Python. Không dùng lệnh Bash nạp `.env` trong PowerShell.
+Windows/VS Code: chạy `setup_windows.cmd` để tạo venv, cài dependency, nhập và
+lưu cấu hình, xác minh host key và kiểm tra SSH. Sau đó chạy `run_windows.cmd`
+hoặc nhấn F5 với cấu hình Windows đã cung cấp. Cài lại giữ cấu hình cũ;
+`setup_windows.cmd --configure` cho phép chỉnh lại.
+
+Chương trình tự đọc `.env` cạnh script, không thực thi shell hay nội suy biến
+trong file. Với `.env` mặc định, biến môi trường đang có được ưu tiên.
+Chọn rõ `--env-file <path>` thì giá trị trong file được ưu tiên, phù hợp khi
+chạy profile đã lưu. File `.env` chứa secret cục bộ và được Git bỏ qua.
 
 Các phiên bản dependency đã kiểm thử được ghi trong `requirements-tested.txt`.
 File này gồm cả SNMP; dùng nó thay requirements khác nếu cần tái lập đúng phiên bản.
@@ -145,13 +152,9 @@ Nhiệt độ chưa có OID là `UNKNOWN`, hoặc tắt rõ ràng bằng cấu h
 
 ## 4. Chạy
 
-Từ thư mục dự án, Bash, sau khi điền `.env` (giá trị có ký tự đặc biệt cần đặt
-trong dấu nháy đơn hợp lệ với Bash):
+Từ thư mục dự án trên Linux, sau khi điền `.env`:
 
 ```bash
-set -a
-. ./.env
-set +a
 .venv/bin/python monitor_ssh.py --check-config
 .venv/bin/python monitor_ssh.py --once
 .venv/bin/python monitor_ssh.py
@@ -159,6 +162,7 @@ set +a
 
 - `--check-config`: kiểm tra cấu hình, dependency và sự tồn tại file key/known_hosts;
   không kết nối thiết bị hay gửi tin, không xác nhận credential thực sự dùng được.
+- `--env-file <path>`: chọn profile dotenv cụ thể và ưu tiên giá trị trong file.
 - `--once`: đo một lần, thử gửi thông báo cũ nhất đang đến hạn của mỗi kênh. Mã
   thoát 0 khi dữ liệu hợp lệ và không còn tin tồn ở các kênh đang cấu hình; 1 khi
   mất kết nối, thiếu dữ liệu hoặc còn tin chưa gửi; 2 khi lỗi cấu hình/nội bộ.

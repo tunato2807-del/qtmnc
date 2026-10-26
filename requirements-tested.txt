@@ -10,5 +10,6 @@ pyasn1==0.6.4
 pycparser==3.12
 PyNaCl==1.6.2
 pysnmp==7.1.30
+python-dotenv==1.2.4
 requests==2.34.2
 urllib3==2.8.0
