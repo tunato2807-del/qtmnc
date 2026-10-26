@@ -552,6 +552,19 @@ class Store:
             row = db.execute("SELECT id,message,attempts,next_attempt FROM outbox WHERE channel=? ORDER BY id LIMIT 1", (channel,)).fetchone()
         return row if row and row[3] <= now else None
 
+    def display_snapshot(self, config, channels):
+        """Read committed alert states and channel queues; never expose credentials."""
+        with self.connect() as db:
+            row = db.execute("SELECT value FROM states WHERE key=?", (config.device_key,)).fetchone()
+            states = json.loads(row[0]) if row else {}
+            queues = {}
+            for key in channels:
+                count = db.execute("SELECT COUNT(*) FROM outbox WHERE channel=?", (key,)).fetchone()[0]
+                oldest = db.execute("SELECT attempts,next_attempt FROM outbox WHERE channel=? ORDER BY id LIMIT 1", (key,)).fetchone()
+                queues[key] = {"pending": count, "attempts": oldest[0] if oldest else 0,
+                               "next_attempt": oldest[1] if oldest else 0}
+            return states, queues
+
     def delivered(self, event_id):
         with self.connect() as db:
             db.execute("DELETE FROM outbox WHERE id=?", (event_id,))
@@ -619,8 +632,9 @@ class Channel:
 
 
 class Dispatcher:
-    def __init__(self, store, channels):
+    def __init__(self, store, channels, view=None):
         self.store, self.channels = store, channels
+        self.view = view
 
     def tick(self):
         failures = 0
@@ -629,12 +643,18 @@ class Dispatcher:
             if event is None:
                 continue
             event_id, message, attempts, _ = event
+            if self.view:
+                self.view.sending(channel.key)
             result = channel.send(message)
             if result.ok:
                 self.store.delivered(event_id)
+                if self.view:
+                    self.view.delivery(channel.key, result)
                 LOG.info("Đã gửi cảnh báo qua %s", channel.kind)
             else:
                 self.store.failed(event_id, attempts, result.retry_after)
+                if self.view:
+                    self.view.delivery(channel.key, result)
                 LOG.warning("%s: %s; đã giữ cảnh báo để thử lại", channel.kind, result.reason)
                 failures += 1
         return failures
@@ -649,16 +669,24 @@ class Dispatcher:
             stop.set()
 
 
-def poll(collector, store, config, channels):
+def poll(collector, store, config, channels, view=None):
+    if view:
+        view.collecting()
     try:
         sample = collector.collect()
     except DeviceUnavailable as exc:
         store.observe(config, None, channels, connection_error=str(exc))
+        if view:
+            view.device_failed(str(exc))
         LOG.warning("%s", exc)
         return False
     store.observe(config, sample, channels)
-    for metric, value in sample.values.items():
-        LOG.info("%s=%s%s", metric, value if value is not None else "UNKNOWN", f" ({sample.errors[metric]})" if metric in sample.errors else "")
+    if view:
+        view.sample_received(sample)
+    else:
+        for metric, value in sample.values.items():
+            display = f"{value:.1f}{'°C' if metric == 'temp' else '%'}" if isinstance(value, (int, float)) else value
+            LOG.info("%s=%s%s", metric, display if value is not None else "UNKNOWN", f" ({sample.errors[metric]})" if metric in sample.errors else "")
     return not sample.errors and all(metric_state(k, v, {}, config) != "UNKNOWN" for k, v in sample.values.items())
 
 
@@ -667,9 +695,13 @@ def main(argv=None):
     parser.add_argument("--once", action="store_true", help="Thu thập một lần và thử gửi các cảnh báo đang đến hạn")
     parser.add_argument("--check-config", action="store_true", help="Kiểm tra cấu hình/dependency mà không kết nối thiết bị hay gửi tin")
     parser.add_argument("--env-file", help="Chọn file dotenv ưu tiên hơn biến môi trường; mặc định .env cạnh script, ưu tiên biến môi trường")
+    parser.add_argument("--display", choices=("auto", "table", "log"), default="auto",
+                        help="auto: bảng cập nhật tại chỗ trong Terminal; table: in bảng mỗi chu kỳ; log: dòng log gọn")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
     channels, worker = [], None
+    view = None
     stop = threading.Event()
     try:
         load_environment_file(args.env_file)
@@ -683,11 +715,17 @@ def main(argv=None):
             LOG.info("Cấu hình và dependency hợp lệ; chưa kiểm tra kết nối hoặc gửi tin")
             return 0
         store = Store(config.state_file)
-        dispatcher = Dispatcher(store, channels)
+        if args.display != "log":
+            from terminal_ui import TerminalDashboard
+            view = TerminalDashboard(config, store, channels, live=args.display == "auto" and not args.once)
+            view.start()
+        dispatcher = Dispatcher(store, channels, view=view)
         keys = [c.key for c in channels]
         if args.once:
-            healthy = poll(collector, store, config, keys)
+            healthy = poll(collector, store, config, keys, view=view)
             failed = dispatcher.tick()
+            if view:
+                view.show_once()
             with store.connect() as db:
                 pending = sum(db.execute("SELECT COUNT(*) FROM outbox WHERE channel=?", (key,)).fetchone()[0] for key in keys)
             return 0 if healthy and not failed and not pending else 1
@@ -696,12 +734,15 @@ def main(argv=None):
         LOG.info("Giám sát %s qua %s mỗi %gs", config.host, config.protocol.upper(), config.interval)
         deadline = time.monotonic()
         while not stop.is_set():
-            poll(collector, store, config, keys)
+            poll(collector, store, config, keys, view=view)
             deadline += config.interval
             now = time.monotonic()
             if deadline < now:
                 LOG.warning("Chu kỳ thu thập vượt thời gian cấu hình; bỏ qua lịch đã trễ")
                 deadline = now + config.interval
+            if view:
+                view.schedule(deadline)
+                view.show_once()
             stop.wait(max(0, deadline - now))
         return 1  # Worker failed; let a supervisor restart the monitor.
     except KeyboardInterrupt:
@@ -720,6 +761,8 @@ def main(argv=None):
         if not worker or not worker.is_alive():
             for channel in channels:
                 channel.close()
+        if view:
+            view.stop()
 
 
 if __name__ == "__main__":

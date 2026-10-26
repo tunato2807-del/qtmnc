@@ -100,6 +100,31 @@ Trong Terminal VS Code, mở đúng thư mục dự án:
 .\run_windows.cmd
 ~~~
 
+Bản mới dùng bảng màu cập nhật tại chỗ: CPU/RAM làm tròn, thanh sử dụng, ngưỡng
+và trạng thái cảnh báo, thời gian kiểm tra tiếp theo; Telegram/Slack có số tin
+đang chờ và thời điểm gửi thành công. Mở rộng khung Terminal nếu bảng bị chật.
+Khi mất SSH, số đo cũ được ghi rõ, không hiển thị như dữ liệu mới.
+
+Chọn bảng in từng chu kỳ hoặc log gọn:
+
+~~~powershell
+.\run_windows.cmd --display table
+.\run_windows.cmd --display log
+~~~
+
+Sau khi cập nhật mã, cài dependency mới một lần:
+
+~~~powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+~~~
+
+Để dùng Ctrl+C mà không gặp câu hỏi Terminate batch job của CMD, chạy Python
+trực tiếp trong PowerShell hoặc dùng F5:
+
+~~~powershell
+.\.venv\Scripts\python.exe monitor_ssh.py --env-file .env
+~~~
+
 Thu thập một lần:
 
 ~~~powershell

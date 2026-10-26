@@ -152,6 +152,17 @@ Nhiệt độ chưa có OID là `UNKNOWN`, hoặc tắt rõ ràng bằng cấu h
 
 ## 4. Chạy
 
+Mặc định Terminal tương tác hiển thị bảng cập nhật tại chỗ: CPU/RAM làm tròn
+một chữ số, thanh sử dụng, ngưỡng, trạng thái, lịch kiểm tra và hàng đợi từng kênh.
+Ẩn log kết nối/xác thực Paramiko lặp lại. Nếu mất kết nối, số đo trước đó được
+đánh dấu dữ liệu cũ; trạng thái bảng dùng cùng hysteresis với cảnh báo thực tế.
+Nhiệt độ chủ động bỏ qua hiển thị `ĐÃ TẮT`, không hiển thị 0°C.
+
+`--display table` in bảng mới mỗi chu kỳ; `--display log` dùng các dòng log gọn.
+Khi chuyển hướng đầu ra vào file, chế độ tự động dùng bảng tĩnh, không có mã
+điều khiển con trỏ. Mục gửi thành công chỉ ghi nhận các lần đã được API xác nhận
+trong phiên hiện tại; số tin chờ đọc từ SQLite, bao gồm tin còn từ phiên trước.
+
 Từ thư mục dự án trên Linux, sau khi điền `.env`:
 
 ```bash
@@ -163,6 +174,8 @@ Từ thư mục dự án trên Linux, sau khi điền `.env`:
 - `--check-config`: kiểm tra cấu hình, dependency và sự tồn tại file key/known_hosts;
   không kết nối thiết bị hay gửi tin, không xác nhận credential thực sự dùng được.
 - `--env-file <path>`: chọn profile dotenv cụ thể và ưu tiên giá trị trong file.
+- `--display auto|table|log`: chọn bảng cập nhật tại chỗ (mặc định khi có TTY),
+  bảng tĩnh hoặc log gọn; `--once` luôn dùng bảng tĩnh trừ khi chọn log.
 - `--once`: đo một lần, thử gửi thông báo cũ nhất đang đến hạn của mỗi kênh. Mã
   thoát 0 khi dữ liệu hợp lệ và không còn tin tồn ở các kênh đang cấu hình; 1 khi
   mất kết nối, thiếu dữ liệu hoặc còn tin chưa gửi; 2 khi lỗi cấu hình/nội bộ.

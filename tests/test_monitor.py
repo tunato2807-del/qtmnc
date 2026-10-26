@@ -353,7 +353,7 @@ class CLITests(unittest.TestCase):
             channel.send.return_value = delivery
             with patch.dict(os.environ, env, clear=True), patch.object(m, "SSHCollector") as collector, patch.object(m, "Channel", return_value=channel):
                 collector.return_value.collect.return_value = sample
-                result = m.main(["--once"])
+                result = m.main(["--once", "--display", "log"])
             return result, channel
 
     def test_once_success_requires_acknowledgement(self):
