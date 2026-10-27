@@ -33,3 +33,16 @@ Riêng trường hợp Windows không nhận SYN-ACK qua loopback, làm theo
 [WINDOWS_TAP_GNS3.md](../WINDOWS_TAP_GNS3.md). Cần kiểm tra SSH thành công trên
 Windows và mất kết nối khi tháo dây switch GNS3 trước khi xác nhận cách này đã
 khắc phục lỗi trên máy thật.
+
+## Cập nhật giảm tải SSH ngày 27/10/2026
+
+- `python -m unittest discover -s tests -v`: 126 tests, OK trong môi trường Linux
+  cho phép socket loopback; không gửi Telegram/Slack thật.
+- SSH loopback thật: hai lượt CPU/RAM/interface dùng một lần xác thực và hai
+  exec channel, mỗi lượt một channel.
+- Shell Linux thật trong fixture SSH: file interface không tồn tại được báo
+  UNKNOWN, CPU/RAM vẫn hợp lệ trong cùng lệnh gộp.
+- Kiểm thử reconnect khi transport mất hoặc kênh timeout, đóng tài nguyên,
+  giữ phân loại lỗi từng chỉ số và từ chối host key lạ vẫn đạt.
+- Chưa đo CPU sau sửa trên VM của người dùng. Phép đo tắt/bật trước sửa và các
+  bước xác nhận được ghi trong [SSH_CPU_TROUBLESHOOTING.md](SSH_CPU_TROUBLESHOOTING.md).

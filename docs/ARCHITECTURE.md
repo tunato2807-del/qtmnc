@@ -41,6 +41,15 @@ Lỗi đọc từng chỉ số trả None + lý do; không suy diễn rằng thi
 SSH dùng RejectPolicy và known_hosts. Không tự thêm khóa chưa xác minh.
 Linux chỉ cần tài khoản đọc được /proc và /sys; monitor không cần đăng nhập root.
 
+Collector dùng lại kết nối SSH còn hoạt động và đã xác thực giữa các lượt đọc,
+keepalive 15 giây. Linux gộp CPU/RAM/interface/nhiệt độ vào một exec channel mỗi
+lượt, thay vì mở 3–4 phiên lệnh riêng. Mỗi khối có mã kết thúc riêng: một file
+thiếu vẫn để các chỉ số khác hợp lệ. Công thức CPU và ngưỡng không thay đổi.
+Khi kênh I/O lỗi, kết nối được đóng để lần lấy mẫu tiếp theo kết nối mới; khi
+thoát ứng dụng, collector đóng kết nối còn giữ. Mọi kết nối mới vẫn xác minh
+known_hosts bằng RejectPolicy. Mẫu bản đơn giản tăng timeout từ 3 lên 15 giây;
+file cấu hình cục bộ đã tạo trước đó không bị tự sửa.
+
 SNMP linux-extend đọc JSON từ Net-SNMP extend qtmnc cho CPU/RAM/nhiệt độ.
 Interface lấy độc lập từ **IF-MIB**: tìm ifIndex bằng ifName rồi đọc ifOperStatus.
 Kiểm tra lại tên của index đã cache; tên không còn khớp thì tìm lại.

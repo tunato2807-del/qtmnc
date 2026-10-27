@@ -26,7 +26,7 @@ except ImportError:
 
 
 @contextmanager
-def ssh_device():
+def ssh_device(*, allowed_commands=None, stats=None):
     host_key = paramiko.RSAKey.generate(2048)
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
@@ -35,9 +35,14 @@ def ssh_device():
     port = listener.getsockname()[1]
     stop = threading.Event()
     transports = []
+    allowed_commands = {"exit"} if allowed_commands is None else allowed_commands
+    allowed_commands.add("exit")
+    stats = {} if stats is None else stats
+    stats.update(authentications=0, commands=[])
 
     class Server(paramiko.ServerInterface):
         def check_auth_password(self, username, password):
+            stats["authentications"] += 1
             return paramiko.AUTH_SUCCESSFUL if (username, password) == ("fixture", "local-fixture-only") else paramiko.AUTH_FAILED
 
         def get_allowed_auths(self, username):
@@ -48,9 +53,9 @@ def ssh_device():
 
         def check_channel_exec_request(self, channel, command):
             command = command.decode()
-            allowed = {m.SSHCollector.CPU_CMD, "cat /proc/meminfo", "cat /sys/class/net/lo/operstate", "exit"}
-            if command not in allowed:
+            if command not in allowed_commands:
                 return False
+            stats["commands"].append(command)
 
             def respond():
                 try:
@@ -98,17 +103,46 @@ def ssh_device():
 @unittest.skipUnless(sys.platform.startswith("linux"), "Local SSH fixture executes Linux /proc probes")
 class SSHIntegrationTests(unittest.TestCase):
     def test_real_ssh_and_linux_probes(self):
-        with tempfile.TemporaryDirectory() as directory, ssh_device() as (port, key):
+        allowed, stats = set(), {}
+        with tempfile.TemporaryDirectory() as directory, ssh_device(allowed_commands=allowed, stats=stats) as (port, key):
             known = Path(directory) / "known_hosts"
             known.write_text(f"[127.0.0.1]:{port} {key.get_name()} {key.get_base64()}\n")
             c = m.Config(host="127.0.0.1", ssh_port=port, ssh_user="fixture",
                          ssh_password="local-fixture-only", known_hosts=str(known),
                          iface="lo", temp_enabled=False, timeout=3)
-            sample = m.SSHCollector(c).collect()
-            self.assertFalse(sample.errors)
-            self.assertTrue(0 <= sample.values["cpu"] <= 100)
-            self.assertTrue(0 <= sample.values["ram"] <= 100)
-            self.assertIn(sample.values["iface"], {"up", "unknown"})
+            collector = m.SSHCollector(c)
+            allowed.add(collector.linux_command())
+            try:
+                for _ in range(2):
+                    sample = collector.collect()
+                    self.assertFalse(sample.errors)
+                    self.assertTrue(0 <= sample.values["cpu"] <= 100)
+                    self.assertTrue(0 <= sample.values["ram"] <= 100)
+                    self.assertIn(sample.values["iface"], {"up", "unknown"})
+                self.assertEqual(stats["authentications"], 1)
+                self.assertEqual(len(stats["commands"]), 2)
+            finally:
+                collector.close()
+
+    def test_missing_remote_file_preserves_other_batch_metrics(self):
+        allowed, stats = set(), {}
+        with tempfile.TemporaryDirectory() as directory, ssh_device(allowed_commands=allowed, stats=stats) as (port, key):
+            known = Path(directory) / "known_hosts"
+            known.write_text(f"[127.0.0.1]:{port} {key.get_name()} {key.get_base64()}\n")
+            c = m.Config(host="127.0.0.1", ssh_port=port, ssh_user="fixture",
+                         ssh_password="local-fixture-only", known_hosts=str(known),
+                         iface="qtmnc-missing", temp_enabled=False, timeout=3)
+            collector = m.SSHCollector(c)
+            allowed.add(collector.linux_command())
+            try:
+                sample = collector.collect()
+                self.assertEqual(set(sample.errors), {"iface"})
+                self.assertIsNone(sample.values["iface"])
+                self.assertTrue(0 <= sample.values["cpu"] <= 100)
+                self.assertTrue(0 <= sample.values["ram"] <= 100)
+                self.assertEqual(len(stats["commands"]), 1)
+            finally:
+                collector.close()
 
     def test_untrusted_host_key_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory, ssh_device() as (port, key):

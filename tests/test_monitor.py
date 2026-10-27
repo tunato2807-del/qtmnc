@@ -239,22 +239,25 @@ class SSHTests(unittest.TestCase):
         c = config()
         obj = m.SSHCollector.__new__(m.SSHCollector)
         obj.c, obj.known_hosts = c, Path("/fake/known_hosts")
+        obj._ssh = None
         client = Mock()
         client.get_transport.return_value.is_active.return_value = True
         if failure:
             client.connect.side_effect = failure
 
         def output(command, **kwargs):
-            value = (cpu if command == obj.CPU_CMD else
-                     "MemTotal: 1000 kB\nMemAvailable: 600 kB\n" if command == "cat /proc/meminfo" else
-                     temp if command == obj.TEMP_CMD else iface)
+            blocks = {"cpu": cpu, "ram": "MemTotal: 1000 kB\nMemAvailable: 600 kB\n",
+                      "iface": iface, "temp": temp}
+            value = "\n".join(f"__QTMNC_BEGIN_{metric}__\n{blocks[metric]}\n__QTMNC_END_{metric}__:0"
+                              for metric in obj._linux_probes())
             stdout, stderr = Mock(), Mock()
             stdout.read.return_value = value.encode()
             stderr.read.return_value = b""
             stdout.channel.recv_exit_status.return_value = 0
             return None, stdout, stderr
         client.exec_command.side_effect = output
-        obj.lib = SimpleNamespace(SSHClient=lambda: client, RejectPolicy=lambda: "reject")
+        obj.lib = SimpleNamespace(SSHClient=Mock(return_value=client), RejectPolicy=lambda: "reject")
+        self.addCleanup(obj.close)
         return obj, client
 
     def test_parse_failure_does_not_mark_ssh_disconnected(self):
@@ -264,8 +267,83 @@ class SSHTests(unittest.TestCase):
         self.assertIn("cpu", sample.errors)
         self.assertEqual(sample.values["ram"], 40)
         self.assertIsNone(sample.values["temp"])
+        client.close.assert_not_called()
+        obj.close()
         client.close.assert_called_once()
         client.set_missing_host_key_policy.assert_called_once_with("reject")
+
+    def test_repeated_polls_reuse_authentication_and_one_exec_each(self):
+        obj, client = self.collector()
+        first, second = obj.collect(), obj.collect()
+        self.assertEqual(first.values, second.values)
+        obj.lib.SSHClient.assert_called_once()
+        client.connect.assert_called_once()
+        client.get_transport.return_value.set_keepalive.assert_called_once_with(15)
+        self.assertEqual(client.exec_command.call_count, 2)
+        client.close.assert_not_called()
+
+    def test_disconnected_cached_client_is_replaced(self):
+        obj, old = self.collector()
+        _, new = self.collector()
+        obj.lib.SSHClient.side_effect = [old, new]
+        obj.collect()
+        old.get_transport.return_value.is_active.return_value = False
+        sample = obj.collect()
+        self.assertEqual(sample.values["ram"], 40)
+        old.close.assert_called_once()
+        new.connect.assert_called_once()
+
+    def test_timeout_discards_client_then_next_poll_reconnects(self):
+        obj, client = self.collector()
+        output = client.exec_command.side_effect
+        client.exec_command.side_effect = TimeoutError("secret must stay hidden")
+        failed = obj.collect()
+        self.assertTrue(all(v is None for v in failed.values.values()))
+        self.assertNotIn("secret", " ".join(failed.errors.values()))
+        client.close.assert_called_once()
+        client.exec_command.side_effect = output
+        self.assertEqual(obj.collect().values["ram"], 40)
+        self.assertEqual(client.connect.call_count, 2)
+
+    def test_batch_file_failure_does_not_hide_other_metrics(self):
+        obj, client = self.collector(iface="up")
+        original = client.exec_command.side_effect
+        def output(*args, **kwargs):
+            stdin, stdout, stderr = original(*args, **kwargs)
+            stdout.read.return_value = stdout.read.return_value.replace(b"__QTMNC_END_ram__:0", b"__QTMNC_END_ram__:1")
+            return stdin, stdout, stderr
+        client.exec_command.side_effect = output
+        sample = obj.collect()
+        self.assertIsNone(sample.values["ram"])
+        self.assertEqual(sample.values["iface"], "up")
+        self.assertIn("ram", sample.errors)
+        self.assertNotIn("iface", sample.errors)
+
+    def test_missing_metric_marker_is_unknown_not_zero(self):
+        obj, client = self.collector(iface="up")
+        original = client.exec_command.side_effect
+        def output(*args, **kwargs):
+            stdin, stdout, stderr = original(*args, **kwargs)
+            stdout.read.return_value = stdout.read.return_value.replace(b"__QTMNC_BEGIN_ram__", b"missing")
+            return stdin, stdout, stderr
+        client.exec_command.side_effect = output
+        sample = obj.collect()
+        self.assertIsNone(sample.values["ram"])
+        self.assertEqual(sample.values["iface"], "up")
+
+    def test_close_is_idempotent_and_closes_channel_streams(self):
+        obj, client = self.collector()
+        original = client.exec_command.side_effect
+        streams = original("ignored")
+        client.exec_command.side_effect = None
+        client.exec_command.return_value = streams
+        obj.collect()
+        streams[1].close.assert_called_once()
+        streams[2].close.assert_called_once()
+        streams[1].channel.close.assert_called_once()
+        obj.close()
+        obj.close()
+        client.close.assert_called_once()
 
     def test_connection_failure_closes_client_and_redacts_exception(self):
         obj, client = self.collector(failure=RuntimeError("sensitive_password"))

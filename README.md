@@ -69,6 +69,10 @@ Mật khẩu gõ không hiện ký tự là bình thường.
 Mỗi vòng đọc xong chờ 5 giây. Ctrl+C dừng; tin chưa gửi được giữ để thử lại.
 Token/mật khẩu không nằm trong code và không được đẩy GitHub.
 
+Collector giữ lại kết nối SSH và gom các chỉ số Linux vào **một lệnh mỗi lượt**,
+giảm số lần xác thực và tạo phiên trên Ubuntu. Nếu CPU tăng cao khi bật monitor
+hoặc SSH hay timeout, xem [hướng dẫn đối chiếu và cập nhật](docs/SSH_CPU_TROUBLESHOOTING.md).
+
 ## Đọc code theo thứ tự
 
 1. Mở **monitor.py**: luồng chính được đánh dấu bốn bước.

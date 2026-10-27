@@ -59,7 +59,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger("paramiko").setLevel(logging.WARNING)
-    channels, worker = [], None
+    channels, worker, collector = [], None, None
     view = None
     stop = threading.Event()
     try:
@@ -121,6 +121,9 @@ def main(argv=None):
         return 2
     finally:
         stop.set()
+        close_collector = getattr(collector, "close", None)
+        if close_collector is not None:
+            close_collector()
         if worker:
             worker.join(timeout=35)
         if not worker or not worker.is_alive():

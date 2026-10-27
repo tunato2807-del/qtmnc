@@ -134,86 +134,139 @@ done
         import paramiko
         self.c = config
         self.lib = paramiko
+        self._ssh = None
         self.known_hosts = Path(config.known_hosts).expanduser()
         if not self.known_hosts.is_file():
             raise ConfigError("Chưa có SSH_KNOWN_HOSTS; hãy thêm host key đã xác minh fingerprint")
         if config.ssh_key and not Path(config.ssh_key).expanduser().is_file():
             raise ConfigError("SSH_KEY_FILE không tồn tại")
 
-    def collect(self):
+    def close(self):
+        ssh, self._ssh = getattr(self, "_ssh", None), None
+        if ssh is not None:
+            ssh.close()
+
+    def _client(self):
+        if self._ssh is not None:
+            transport = self._ssh.get_transport()
+            if transport and transport.is_active() and transport.is_authenticated():
+                return self._ssh
+            self.close()
         ssh = self.lib.SSHClient()
+        self._ssh = ssh
         try:
             ssh.load_system_host_keys()
             ssh.load_host_keys(str(self.known_hosts))
             ssh.set_missing_host_key_policy(self.lib.RejectPolicy())
-            try:
-                ssh.connect(self.c.host, port=self.c.ssh_port, username=self.c.ssh_user,
-                            password=self.c.ssh_password or None,
-                            key_filename=str(Path(self.c.ssh_key).expanduser()) if self.c.ssh_key else None,
-                            timeout=self.c.timeout, auth_timeout=self.c.timeout,
-                            banner_timeout=self.c.timeout,
-                            allow_agent=not bool(self.c.ssh_password),
-                            look_for_keys=not bool(self.c.ssh_password))
-            except Exception as exc:
-                # Libraries may include sensitive configuration in exception messages.
-                raise DeviceUnavailable(f"Không kết nối/xác thực SSH được ({type(exc).__name__}); kiểm tra mạng, tài khoản và host key") from None
+            ssh.connect(self.c.host, port=self.c.ssh_port, username=self.c.ssh_user,
+                        password=self.c.ssh_password or None,
+                        key_filename=str(Path(self.c.ssh_key).expanduser()) if self.c.ssh_key else None,
+                        timeout=self.c.timeout, auth_timeout=self.c.timeout,
+                        banner_timeout=self.c.timeout,
+                        allow_agent=not bool(self.c.ssh_password),
+                        look_for_keys=not bool(self.c.ssh_password))
+            transport = ssh.get_transport()
+            if transport is not None:
+                transport.set_keepalive(15)
+            return ssh
+        except Exception as exc:
+            self.close()
+            # Libraries may include sensitive configuration in exception messages.
+            raise DeviceUnavailable(f"Không kết nối/xác thực SSH được ({type(exc).__name__}); kiểm tra mạng, tài khoản và host key") from None
 
-            def read(command):
-                try:
-                    _, stdout, stderr = ssh.exec_command(command, timeout=self.c.timeout)
-                    raw = stdout.read(262145)
-                    if len(raw) > 262144:
-                        raise DataError("Đầu ra lệnh vượt giới hạn")
-                    stderr.read(16384)
-                    if stdout.channel.recv_exit_status() != 0:
-                        raise DataError("Lệnh thu thập không thực thi thành công")
-                    return raw.decode("utf-8", errors="replace").strip()
-                except DataError:
-                    raise
-                except Exception as exc:
-                    transport = ssh.get_transport()
-                    if transport is None or not transport.is_active():
-                        raise DeviceUnavailable("Mất kết nối SSH khi thu thập") from None
-                    raise DataError(f"Không đọc được lệnh SSH ({type(exc).__name__})") from None
-
-            if self.c.target_os == "windows":
-                try:
-                    return windows_sample(read(windows_command(self.c)), self.c.temp_enabled)
-                except DataError as exc:
-                    metrics = ["cpu", "ram", "iface"] + (["temp"] if self.c.temp_enabled else [])
-                    return Sample({k: None for k in metrics}, {k: str(exc) for k in metrics})
-
-            probes = {
-                "cpu": (self.CPU_CMD, cpu_percent),
-                "ram": ("cat /proc/meminfo", ram_percent),
-                "iface": ("cat " + shlex.quote(f"/sys/class/net/{self.c.iface}/operstate"), lambda s: s.lower() if s else None),
-            }
-            if self.c.temp_enabled:
-                cmd = "cat /var/lib/qtmnc-lab/temperature.json" if self.c.temp_source == "demo" else "cat " + shlex.quote(self.c.temp_path) if self.c.temp_path else self.TEMP_CMD
-
-                def parse_temp(raw):
-                    if self.c.temp_source == "demo":
-                        try:
-                            data=json.loads(raw)
-                            expires=number(data.get("expires_at"),0)
-                            return number(data.get("celsius") if expires > time.time() else data.get("baseline",40),-50,200)
-                        except (ValueError,TypeError,AttributeError):
-                            raise DataError("File nhiệt độ MÔ PHỎNG không hợp lệ") from None
-                    if not raw:
-                        raise DataError("Thiết bị không cung cấp cảm biến nhiệt độ CPU")
-                    return max(number(line, -50000, 200000) / 1000 for line in raw.splitlines())
-
-                probes["temp"] = (cmd, parse_temp)
-            values, errors = {}, {}
-            for metric, (command, parse) in probes.items():
-                try:
-                    values[metric] = parse(read(command))
-                except DataError as exc:
-                    values[metric] = None
-                    errors[metric] = str(exc)
-            sources={key:"SSH" for key in values}
-            if "temp" in sources and self.c.temp_source == "demo":
-                sources["temp"]="SSH / DEMO"
-            return Sample(values, errors, sources)
+    def _read(self, command):
+        ssh = self._client()
+        streams = ()
+        try:
+            streams = ssh.exec_command(command, timeout=self.c.timeout)
+            _, stdout, stderr = streams
+            raw = stdout.read(262145)
+            if len(raw) > 262144:
+                raise DataError("Đầu ra lệnh vượt giới hạn")
+            stderr.read(16384)
+            if stdout.channel.recv_exit_status() != 0:
+                raise DataError("Lệnh thu thập không thực thi thành công")
+            return raw.decode("utf-8", errors="replace").strip()
+        except DataError:
+            raise
+        except Exception as exc:
+            transport = ssh.get_transport()
+            disconnected = transport is None or not transport.is_active()
+            # A failed channel is never reused; reconnect on the next poll.
+            self.close()
+            if disconnected:
+                raise DeviceUnavailable("Mất kết nối SSH khi thu thập") from None
+            raise DataError(f"Không đọc được lệnh SSH ({type(exc).__name__})") from None
         finally:
-            ssh.close()
+            for stream in streams:
+                if stream is not None:
+                    stream.close()
+            if streams:
+                streams[1].channel.close()
+
+    def _linux_probes(self):
+        probes = {
+            "cpu": (self.CPU_CMD, cpu_percent),
+            "ram": ("cat /proc/meminfo", ram_percent),
+            "iface": ("cat " + shlex.quote(f"/sys/class/net/{self.c.iface}/operstate"), lambda s: s.lower() if s else None),
+        }
+        if self.c.temp_enabled:
+            cmd = "cat /var/lib/qtmnc-lab/temperature.json" if self.c.temp_source == "demo" else "cat " + shlex.quote(self.c.temp_path) if self.c.temp_path else self.TEMP_CMD
+
+            def parse_temp(raw):
+                if self.c.temp_source == "demo":
+                    try:
+                        data=json.loads(raw)
+                        expires=number(data.get("expires_at"),0)
+                        return number(data.get("celsius") if expires > time.time() else data.get("baseline",40),-50,200)
+                    except (ValueError,TypeError,AttributeError):
+                        raise DataError("File nhiệt độ MÔ PHỎNG không hợp lệ") from None
+                if not raw:
+                    raise DataError("Thiết bị không cung cấp cảm biến nhiệt độ CPU")
+                return max(number(line, -50000, 200000) / 1000 for line in raw.splitlines())
+
+            probes["temp"] = (cmd, parse_temp)
+        return probes
+
+    def linux_command(self):
+        """One exec channel per poll avoids repeated remote PAM session setup."""
+        script = []
+        for metric, (command, _) in self._linux_probes().items():
+            script.extend([
+                f"printf '\\n__QTMNC_BEGIN_{metric}__\\n'",
+                "( " + command + " )",
+                "qtmnc_probe_status=$?",
+                f"printf '\\n__QTMNC_END_{metric}__:%s\\n' \"$qtmnc_probe_status\"",
+            ])
+        script.append("exit 0")
+        return "LC_ALL=C sh -c " + shlex.quote("\n".join(script))
+
+    def collect(self):
+        metrics = ["cpu", "ram", "iface"] + (["temp"] if self.c.temp_enabled else [])
+        sources = {metric: "SSH" for metric in metrics}
+        if self.c.temp_enabled and self.c.temp_source == "demo":
+            sources["temp"] = "SSH / DEMO"
+        try:
+            if self.c.target_os == "windows":
+                return windows_sample(self._read(windows_command(self.c)), self.c.temp_enabled)
+            raw = self._read(self.linux_command())
+        except DataError as exc:
+            return Sample({k: None for k in metrics}, {k: str(exc) for k in metrics}, sources)
+
+        lines = raw.splitlines()
+        values, errors = {}, {}
+        for metric, (_, parse) in self._linux_probes().items():
+            try:
+                begin = lines.index(f"__QTMNC_BEGIN_{metric}__") + 1
+                end_marker = f"__QTMNC_END_{metric}__:"
+                end = next(i for i in range(begin, len(lines)) if lines[i].startswith(end_marker))
+                if int(lines[end][len(end_marker):]) != 0:
+                    raise DataError("Lệnh thu thập không thực thi thành công")
+                values[metric] = parse("\n".join(lines[begin:end]).strip())
+            except DataError as exc:
+                values[metric] = None
+                errors[metric] = str(exc)
+            except (ValueError, StopIteration):
+                values[metric] = None
+                errors[metric] = "Thiếu hoặc sai định dạng khối dữ liệu SSH"
+        return Sample(values, errors, sources)

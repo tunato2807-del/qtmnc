@@ -190,6 +190,11 @@ Sau khi setup thành công, trên Windows:
 Sau này chỉ cần run_windows.cmd hoặc F5. Ctrl+C dừng.
 Không cần cài Python, dependency của dự án hoặc SNMP agent trên Ubuntu.
 
+Bản hiện tại dùng lại kết nối SSH và chạy một lệnh thu thập gộp mỗi lượt.
+Nếu VM có CPU cao hoặc xuất hiện SSHException/TimeoutError, làm theo
+[hướng dẫn CPU/SSH](docs/SSH_CPU_TROUBLESHOOTING.md). File .env.simple cũ vẫn giữ
+giá trị riêng của bạn; cập nhật Git không tự thay timeout của file này.
+
 ## Bước 6 — Hiểu và thử cảnh báo
 
 Chương trình đọc CPU/RAM/nhiệt độ/interface, so với ngưỡng rồi gửi tin khi đổi

@@ -66,6 +66,8 @@ class WindowsTests(unittest.TestCase):
         self.assertEqual(sample.values["iface"], "down")
         self.assertFalse(sample.errors)
         self.assertTrue(client.exec_command.call_args.args[0].startswith("powershell.exe "))
+        client.close.assert_not_called()
+        obj.close()
         client.close.assert_called_once()
 
     def test_missing_powershell_still_means_connected_with_unknown_metrics(self):
@@ -79,6 +81,7 @@ class WindowsTests(unittest.TestCase):
         client.exec_command.return_value = None, stdout, stderr
         sample = obj.collect()
         self.assertEqual(set(sample.errors), {"cpu", "ram", "iface", "temp"})
+        obj.close()
         client.close.assert_called_once()
 
 

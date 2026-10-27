@@ -11,6 +11,9 @@ class HybridCollector:
         self.ssh=ssh if ssh is not None else SSHCollector(config)
         self.snmp=snmp if snmp is not None else SNMPCollector(config)
 
+    def close(self):
+        self.ssh.close()
+
     def collect(self):
         samples, failures={},{}
         for name,collector in (("ssh",self.ssh),("snmp",self.snmp)):

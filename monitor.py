@@ -29,7 +29,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logging.getLogger("paramiko").setLevel(logging.WARNING)
-    channels, worker, view = [], None, None
+    channels, worker, view, collector = [], None, None, None
     stop = threading.Event()
     try:
         # 1. Đọc cấu hình. Mật khẩu/token ở file cục bộ, không viết trong code.
@@ -87,6 +87,8 @@ def main(argv=None):
         return 2
     finally:
         stop.set()
+        if collector is not None:
+            collector.close()
         if worker:
             worker.join(timeout=35)
         if not worker or not worker.is_alive():
