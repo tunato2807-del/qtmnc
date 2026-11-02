@@ -20,6 +20,16 @@ class Store:
                     id INTEGER PRIMARY KEY, channel TEXT NOT NULL, message TEXT NOT NULL,
                     attempts INTEGER NOT NULL DEFAULT 0, next_attempt REAL NOT NULL DEFAULT 0
                 );
+                CREATE TABLE IF NOT EXISTS samples (
+                    id INTEGER PRIMARY KEY, device_key TEXT NOT NULL,
+                    recorded_at REAL NOT NULL, payload TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS samples_device_time ON samples(device_key, recorded_at);
+                CREATE TABLE IF NOT EXISTS events (
+                    id INTEGER PRIMARY KEY, device_key TEXT NOT NULL,
+                    recorded_at REAL NOT NULL, severity TEXT NOT NULL, message TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS events_device_time ON events(device_key, recorded_at);
             """)
 
     @contextmanager
@@ -33,6 +43,7 @@ class Store:
 
     def observe(self, config, sample, channels, connection_error=None):
         key = config.device_key
+        observed_at = time.time()
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT value FROM states WHERE key=?", (key,)).fetchone()
@@ -69,6 +80,31 @@ class Store:
                 for channel in channels:
                     db.execute("INSERT INTO outbox(channel,message) VALUES (?,?)", (channel, body))
             db.execute("INSERT INTO states(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, json.dumps(states)))
+            kinds = (["telegram"] if config.telegram_token else []) + (["slack"] if config.slack_webhook else [])
+            payload = {
+                "host": config.host, "protocol": config.protocol, "target_os": config.target_os, "iface": config.iface,
+                "interval": config.interval, "timeout": config.timeout,
+                "thresholds": config.thresholds, "recovery_margin": config.recovery_margin,
+                "temp_enabled": config.temp_enabled, "connection": connection,
+                "connection_error": connection_error or "",
+                "values": dict(sample.values) if sample else {},
+                "errors": dict(sample.errors) if sample else {},
+                "sources": dict(sample.sources) if sample else {}, "states": states,
+                "channels": [{"key": item, "kind": kinds[i] if i < len(kinds) else f"Kênh {i+1}"}
+                             for i, item in enumerate(channels)],
+            }
+            db.execute("INSERT INTO samples(device_key,recorded_at,payload) VALUES (?,?,?)",
+                       (key, observed_at, json.dumps(payload, ensure_ascii=False, allow_nan=False)))
+            if messages:
+                severity = "ALERT" if any(m.startswith(("❌", "🚨")) for m in messages) else "UNKNOWN" if any(m.startswith("❓") for m in messages) else "RECOVERY"
+                db.execute("INSERT INTO events(device_key,recorded_at,severity,message) VALUES (?,?,?,?)",
+                           (key, observed_at, severity, "\n".join(messages)))
+            # Bound the history independently of notification delivery. Never prune outbox.
+            for table, limit in (("samples", 5000), ("events", 1000)):
+                db.execute(f"DELETE FROM {table} WHERE recorded_at < ?", (observed_at - 86400,))
+                db.execute(f"DELETE FROM {table} WHERE device_key=? AND id NOT IN "
+                           f"(SELECT id FROM {table} WHERE device_key=? ORDER BY id DESC LIMIT ?)",
+                           (key, key, limit))
             return messages
 
     def due(self, channel, now):

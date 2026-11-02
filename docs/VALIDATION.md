@@ -46,3 +46,17 @@ khắc phục lỗi trên máy thật.
   giữ phân loại lỗi từng chỉ số và từ chối host key lạ vẫn đạt.
 - Chưa đo CPU sau sửa trên VM của người dùng. Phép đo tắt/bật trước sửa và các
   bước xác nhận được ghi trong [SSH_CPU_TROUBLESHOOTING.md](SSH_CPU_TROUBLESHOOTING.md).
+
+## Dashboard và mô hình đồ án ngày 02/11/2026
+
+- Toàn bộ 141 unittest đạt trong môi trường Linux cho phép loopback.
+- SQLite: lưu mẫu/sự kiện cùng transaction với trạng thái/outbox; rollback,
+  dữ liệu cũ, kết nối DOWN, giữ secret ngoài JSON, retention không xóa outbox.
+- HTTP localhost thật: chỉ đọc, CSV, Host/Origin, giới hạn cửa sổ thời gian và
+  allowlist file; không phát sinh collector hoặc gọi dịch vụ nhắn tin.
+- Chromium: desktop 1600 px, mobile 390 px, biểu đồ, CSV, thông báo demo, mất
+  kết nối, mẫu cũ và nội dung sự kiện không được thực thi như HTML/JavaScript.
+- QTMNC_COURSE.gns3: 7 node, 2 switch access VLAN 10/30, 3 vùng ghi chú; hợp lệ
+  theo schema GNS3 revision 9 đã dẫn ở trên. Chưa mở GUI GNS3 trên Windows người dùng.
+- Báo cáo Word/PDF có tham chiếu 7 PDF người dùng cung cấp (265 trang), phân
+  biệt mô hình thiết kế, ảnh demo, kiểm thử mã và ca nghiệm thu cần đo thật.

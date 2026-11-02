@@ -4,6 +4,13 @@
 Chương trình xem CPU, RAM, nhiệt độ và trạng thái card mạng, gửi cảnh báo khi lỗi
 và khi phục hồi.
 
+**Bản đồ án có dashboard web và mô hình GNS3 7 node:** làm theo
+[COURSE_LAB.md](docs/COURSE_LAB.md). Mở [bộ báo cáo Word/PDF và sơ đồ](docs/course_project/README.md).
+[Tải hồ sơ đồ án dạng ZIP](docs/course_project/QTMNC_Course_Report.zip).
+Sau khi monitor chạy, mở Terminal khác: `.\run_dashboard.cmd`, rồi truy cập
+**http://127.0.0.1:8765**. Xem thử giao diện bằng `.\run_dashboard.cmd --demo`
+(có nhãn mô phỏng, không gửi tin). Dashboard đọc SQLite, không tăng số phiên SSH.
+
 **Xem [6 mô hình trực quan và giải thích từ đầu đến cuối](docs/truc_quan/README.md).**
 Tải [index.html](docs/truc_quan/index.html) rồi mở bằng Chrome/Edge để thử tăng
 RAM, ngắt interface, mất SSH và mất Internet trong mô phỏng. Trang chạy offline,

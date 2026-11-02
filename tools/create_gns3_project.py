@@ -6,6 +6,7 @@ from pathlib import Path
 import urllib.parse
 import urllib.request
 import uuid
+from xml.sax.saxutils import escape
 
 ROOT=Path(__file__).resolve().parents[1]
 NS=uuid.UUID("efb81918-060c-49aa-b21a-9b1a14d80f22")
@@ -87,6 +88,55 @@ def tap_project(names=None, cloud_port=30010, bridge_port=30011):
     return value
 
 
+def course_project(names=None):
+    """Seven lightweight nodes, distinct management/test L2 segments, no router image."""
+    value=project(names)
+    value["name"]="QTMNC_COURSE"
+    value["project_id"]=uid("course-project")
+    value["scene_height"]=1400
+    nodes=value["topology"]["nodes"]
+    for item in nodes:
+        if item["name"]=="WINDOWS-VMNET1":
+            item["name"]="Cloud-WINDOWS"
+            item["properties"]["ports_mapping"]=[{"name":"TAP-UDP","port_number":0,"type":"udp",
+                                                   "lport":30010,"rhost":"127.0.0.1","rport":30011}]
+        elif item["name"]=="LINUX-MGMT-VMNET2":
+            item["name"]="Cloud-LINUX-MGMT"
+        elif item["name"]=="LINUX-DATA-VMNET3":
+            item["name"]="Cloud-LINUX-LAB"
+        elif item["name"]=="SW-TEST":
+            item["name"]="SW-LAB"
+        elif item["name"]=="VPCS-TEST":
+            item["name"]="PC01"
+        if item["node_type"]=="ethernet_switch":
+            vlan=10 if item["name"]=="SW-MANAGEMENT" else 30
+            for port in item["properties"]["ports_mapping"]:
+                port["vlan"]=vlan
+        item["label"]["text"]=item["name"]
+    pc={"name":"PC02","node_id":uid("course-pc02"),"node_type":"vpcs","compute_id":"local",
+        "console_type":"telnet","x":220,"y":330,"z":1,"symbol":":/symbols/vpcs_guest.svg",
+        "properties":{},"label":{"text":"PC02","x":0,"y":-28,"rotation":0}}
+    nodes.append(pc)
+    switch=next(n for n in nodes if n["name"]=="SW-LAB")
+    value["topology"]["links"].append({"link_id":uid("course-link-pc02"),"nodes":[
+        {"node_id":switch["node_id"],"adapter_number":0,"port_number":2},
+        {"node_id":pc["node_id"],"adapter_number":0,"port_number":0}]})
+    def drawing(name,x,y,width,height,fill,stroke,lines):
+        text="".join(f'<text x="20" y="{34+i*27}" font-family="DejaVu Sans" font-size="18" fill="#19354a">{escape(line)}</text>'
+                     for i,line in enumerate(lines))
+        return {"drawing_id":uid("course-drawing-"+name),"x":x,"y":y,"z":-1,"rotation":0,
+                "svg":f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}"><rect x="1" y="1" width="{width-2}" height="{height-2}" rx="16" fill="{fill}" stroke="{stroke}" stroke-width="2"/>{text}</svg>'}
+    value["topology"]["drawings"]=[
+        drawing("management",-620,-235,1200,220,"#edf6fb","#7fadc1",["QUẢN TRỊ · ACCESS VLAN 10 · 192.168.10.0/24"]),
+        drawing("lab",-620,40,1200,450,"#f0f2fc","#a19bce",["THỬ NGHIỆM · ACCESS VLAN 30 · 192.168.30.0/24"]),
+        drawing("notes",-620,520,1200,115,"#f8fafc","#c6d3df",[
+            "Một Ubuntu VMware: ens37 .10.129 | gns3test .30.129 | ens33 NAT / DHCP",
+            "PC01 .30.10 | PC02 .30.20 · Hai Cloud Linux là hai card của cùng một VM",
+            "Windows: TAP .10.1 · Dashboard http://127.0.0.1:8765 · Không có routing liên VLAN"]),
+    ]
+    return value
+
+
 def local_interfaces(url, indices=(1,2,3)):
     parsed=urllib.parse.urlsplit(url)
     if parsed.scheme not in {"http","https"} or parsed.hostname not in {"localhost","127.0.0.1","::1"} or parsed.username or parsed.password:
@@ -110,20 +160,21 @@ def main():
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--simple", action="store_true", help="Chỉ hai Cloud và một switch")
     mode.add_argument("--tap", action="store_true", help="Windows TAP/UDP -> switch -> Cloud VMnet2")
+    mode.add_argument("--course", action="store_true", help="Đồ án: TAP, hai vùng quản trị/thử nghiệm, hai VPCS")
     p.add_argument("--server",default="http://127.0.0.1:3080")
     a=p.parse_args()
     if a.output is None:
-        name="QTMNC_TAP" if a.tap else "QTMNC_SIMPLE" if a.simple else "QTMNC_GNS3_MONITOR"
+        name="QTMNC_COURSE" if a.course else "QTMNC_TAP" if a.tap else "QTMNC_SIMPLE" if a.simple else "QTMNC_GNS3_MONITOR"
         a.output=ROOT/"lab/generated"/name/(name+".gns3")
     if a.output.exists():
         p.error("File đã tồn tại; chọn --output mới để giữ công việc GNS3 đã chỉnh")
-    indices = (2,) if a.tap else (1,2) if a.simple else (1,2,3)
+    indices = (2,3) if a.course else (2,) if a.tap else (1,2) if a.simple else (1,2,3)
     names=local_interfaces(a.server, indices) if a.check_local_api else None
-    value=(tap_project if a.tap else simple_project if a.simple else project)(names)
+    value=(course_project if a.course else tap_project if a.tap else simple_project if a.simple else project)(names)
     a.output.parent.mkdir(parents=True,exist_ok=True)
     a.output.write_text(json.dumps(value,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(a.output)
-    if a.tap:
+    if a.tap or a.course:
         print("Cloud-WINDOWS dùng UDP 30010 -> 127.0.0.1:30011; chạy run_tap_windows.cmd.")
     else:
         print("Mở file này trong GNS3 local server; kiểm tra Cloud đúng VMnet1/2" + ("." if a.simple else "/3."))

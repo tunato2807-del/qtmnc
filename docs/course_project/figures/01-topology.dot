@@ -1,0 +1,41 @@
+digraph G {graph [fontname="DejaVu Sans",bgcolor="white",pad="0.3",nodesep="0.4",ranksep="0.55"];
+node [fontname="DejaVu Sans",shape=box,style="rounded,filled",fillcolor="#eef4ff",color="#6a89c4",fontsize=14,margin="0.20,0.14"];
+edge [fontname="DejaVu Sans",fontsize=11,color="#69829b",arrowsize=0.7];
+rankdir=TB;
+win [label="WINDOWS THẬT
+VS Code · Python · Dashboard
+TAP 192.168.10.1/24",fillcolor="#dff5ee",color="#299b80"];
+subgraph cluster_mgmt {label="GNS3 · QUẢN TRỊ · ACCESS VLAN 10";fontname="DejaVu Sans";fontsize=16;color="#98c3cf";style=rounded;
+ cw [label="Cloud-WINDOWS
+UDP local 30010 → 30011"];
+ sm [label="SW-MANAGEMENT
+Ethernet0 ↔ Ethernet1",fillcolor="#fff1da",color="#cf9c47"];
+ cm [label="Cloud-LINUX-MGMT
+VMnet2"];
+ {rank=same;cw;sm;cm} cw -> sm -> cm [dir=both];}
+subgraph cluster_vm {label="VMWARE UBUNTU · MỘT MÁY ẢO";fontname="DejaVu Sans";fontsize=16;color="#86b89f";style=rounded;
+ mg [label="ens37 · QUẢN TRỊ
+192.168.10.129/24
+SSH TCP/22",fillcolor="#e6f5e9"];
+ la [label="gns3test · THEO DÕI
+192.168.30.129/24
+operstate",fillcolor="#e6f5e9"];
+ nat [label="ens33 · NAT/VMnet8
+DHCP / default route",fillcolor="#e6f5e9"];
+ {rank=same;mg;la;nat} mg -> la [style=dashed,dir=none,label="CPU/RAM/temp chung VM"];}
+subgraph cluster_lab {label="GNS3 · THỬ NGHIỆM · ACCESS VLAN 30";fontname="DejaVu Sans";fontsize=16;color="#b0a9db";style=rounded;
+ cl [label="Cloud-LINUX-LAB
+VMnet3"];
+ sl [label="SW-LAB",fillcolor="#fff1da",color="#cf9c47"];
+ p1 [label="PC01 · VPCS
+192.168.30.10/24"];
+ p2 [label="PC02 · VPCS
+192.168.30.20/24"];
+ {rank=same;cl;sl;p1;p2} cl -> sl [dir=both];sl -> p1 [dir=both];sl -> p2 [dir=both];}
+net [label="INTERNET
+Telegram / Slack HTTPS",fillcolor="#eef0f8"];
+win -> cw [dir=both,label="TAP helper 30011 ↔ GNS3 30010"];
+cm -> mg [dir=both,label="Ethernet / VMnet2"];
+la -> cl [dir=both,label="Ethernet / VMnet3"];
+nat -> net [label="NAT Ubuntu",style=dashed];win -> net [label="HTTPS gửi tin từ Windows",style=dashed,constraint=false];
+}

@@ -1,0 +1,54 @@
+{
+  "total_pages": 265,
+  "files": [
+    {
+      "key": "source-1",
+      "filename": "Chuong 5 - Quan ly hieu suat hoat dong (1).pdf",
+      "pages": 38,
+      "chars": 11360,
+      "sha256": "8b84dcf3dff8d104bdf1e8f767152b1ad19f8f751dfaeef4d9e1346492ef6c65"
+    },
+    {
+      "key": "source-2",
+      "filename": "Chuong 1. Quang tri mang nang cao (1).pdf",
+      "pages": 39,
+      "chars": 16473,
+      "sha256": "cc61ae0d080eea09bcb5fc88fe35f1a22dc086992c9d267e1b554699717d88d6"
+    },
+    {
+      "key": "source-3",
+      "filename": "Chương 4. Tự động hóa quản trị hệ thống SDN bằng Python (2).pdf",
+      "pages": 33,
+      "chars": 13190,
+      "sha256": "56dfffef09fd4a0a65dee39fec172866baaeb66745078ab92cdf271366ce0440"
+    },
+    {
+      "key": "source-4",
+      "filename": "VPN VS CLOUD (1).pdf",
+      "pages": 67,
+      "chars": 31835,
+      "sha256": "9277b361a15ef38c231c8544f743024e33efb60030be9ee527e60f5ea583446d"
+    },
+    {
+      "key": "source-5",
+      "filename": "Chuong 3-An ninh mang khong day (2).pdf",
+      "pages": 33,
+      "chars": 15494,
+      "sha256": "ba2440505c4065474e27258914f0408beb4f8efe8d44f7e0c6e7281d6a699e52"
+    },
+    {
+      "key": "source-6",
+      "filename": "Chuong 2. Phan tich cac mo hinh mang (2).pdf",
+      "pages": 28,
+      "chars": 11459,
+      "sha256": "d5f49485c79a1735465ff229d0abd1df6f597b697c76a53f6a2eef774ad681de"
+    },
+    {
+      "key": "source-7",
+      "filename": "Chương 6- Qản lý bảo mật (1).pdf",
+      "pages": 27,
+      "chars": 12338,
+      "sha256": "89becef2f415573501498bf03278f5d5af50c2664fcdea15851e3f2002efac33"
+    }
+  ]
+}
