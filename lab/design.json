@@ -1,0 +1,16 @@
+{
+  "name": "NETWATCH_ROUTED",
+  "gns3_nodes": 6,
+  "cloud_nodes": 0,
+  "router": {"name":"R1-LINUX","hypervisor":"vmware","adapter0":"NAT VMnet8, không nối link GNS3","adapter1":"srv0 -> SW-SERVERS","adapter2":"users0 -> SW-USERS"},
+  "server": {"name":"SRV1-LINUX","hypervisor":"vmware","adapter0":"lan0 -> SW-SERVERS"},
+  "subnets": [
+    {"name":"Quản trị NAT VMware","cidr":"192.168.73.0/24","windows":"192.168.73.1","router":"192.168.73.10","upstream":"192.168.73.2"},
+    {"name":"Servers","cidr":"10.10.10.0/24","gateway":"10.10.10.1","server":"10.10.10.10"},
+    {"name":"Users","cidr":"10.20.20.0/24","gateway":"10.20.20.1","vpcs":["10.20.20.10","10.20.20.20"]}
+  ],
+  "windows_routes": [{"destination":"10.10.10.0/24","next_hop":"192.168.73.10"},{"destination":"10.20.20.0/24","next_hop":"192.168.73.10"}],
+  "management_path": "Windows -> native VMnet8 -> R1 IPv4 forwarding -> SW-SERVERS -> SRV1",
+  "acl_demo": "Chặn Users -> Servers TCP/22 và UDP/161, vẫn cho ICMP",
+  "notes": "Cần hai full clone Ubuntu; file .gns3 được tạo sau khi chọn VMX thật bằng create_lab.cmd. Không chứa VM/image hoặc secret."
+}

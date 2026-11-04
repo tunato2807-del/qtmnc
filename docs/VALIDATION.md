@@ -1,62 +1,17 @@
-# Kiểm chứng bản GNS3
+# Phạm vi xác minh bản viết lại
 
-Kết quả trong môi trường phát triển Linux ngày 26/10/2026:
+Ngày: 04/11/2026. Môi trường phát triển: Linux, Python3.12; không có VMware Workstation Windows hoặc hai clone của người dùng tại đây.
 
-| Kiểm tra | Kết quả |
-|---|---|
-| Python unittest discover | 119 tests, OK |
-| Bản đơn giản | Wizard giữ secret cục bộ, lab 3 node, runner SSH, retry khi gửi lỗi; chạy được khi chặn import SNMP |
-| pip check | Không có dependency hỏng |
-| SSH loopback | Thu thập thật, từ chối khóa lạ/khóa thay đổi, chấp nhận fingerprint đúng |
-| SNMPv2c/v3 loopback | GET/GETNEXT thật, JSON extend, tìm ifIndex và DOWN → UP |
-| Probe Linux đã sao chép như khi cài agent | Chạy Python cô lập không site-packages, JSON hợp lệ, CPU/RAM trong 0–100 |
-| File topology | Hợp lệ theo schema chính thức GNS3, revision 9 |
-| Cầu nối TAP/UDP | Truyền frame hai chiều qua UDP localhost thật, giữ nguyên byte Ethernet, từ chối peer sai và frame thiếu header |
-| API TAP Windows | Giả lập registry, mở handle, overlapped I/O, hủy I/O và bật trạng thái cáp; chưa chạy driver Windows thật |
-| Project QTMNC_TAP | Hợp lệ theo schema project và schema cổng UDP Cloud; cả hai link qua Switch1 |
-| Mermaid | Cả 8 sơ đồ phân tích cú pháp hợp lệ |
-| Báo cáo | Dựng lại 8 PNG/SVG, PDF 10 trang và Word |
-| Bộ học trực quan mới | 6 PNG/SVG, PDF 13 trang và HTML tự chứa; sơ đồ đối chiếu mô hình ens37/ens33 hiện tại |
-| Mô phỏng tương tác | Chromium: ngưỡng RAM đối chiếu engine thật, cảnh báo/phục hồi, UNKNOWN, mất SSH, interface DOWN và hàng đợi mất Internet; desktop/mobile; không yêu cầu mạng ngoài |
+| Hạng mục | Cách kiểm tra | Kết quả |
+|---|---|---|
+| Logic, DB, web, lab generator | `python -m unittest discover -v` | 26test đạt |
+| SSH | Server Paramiko loopback; pin key,2lệnh,1transport | Đạt; không phải xác thực máy Ubuntu của người dùng |
+| SNMP | SNMPv2c GET qua UDP loopback, OID extend và JSON | Đạt; chưa chạy Net-SNMP trên clone thật |
+| GNS3 file | JSON Schema revision9 + VMware properties2.2.61 | Đạt cấu trúc; chưa boot VM bằng GNS3 |
+| Trình duyệt | Chromium desktop1440px/mobile390px, chọn thiết bị, tải CSV | Kiểm tra bằng dữ liệu mô phỏng; xem ảnh demo |
+| Provision Ubuntu | Xem/kiểm tra kế hoạch netplan, vai trò và bảng nftables | Không áp dụng lên mạng máy phát triển; cần nghiệm thu trên clone |
+| PowerShell/VMware | Script và hướng dẫn trong repo | Cần chạy trên Windows; không tuyên bố đã chạy ở đây |
+| Telegram/Slack thật | Test HTTP được giả lập | Chưa gửi tin thật; cần token và nghiệm thu cục bộ |
+| Hiệu năng/độ trễ | Có quy trình đo A/B và t0/t1/t2 | Chưa có kết quả thực nghiệm trên máy người dùng |
 
-Schema tham chiếu từ kho GNS3/gns3-server, commit
-9c6a0c7be42629fd0c72fab1e3376c34f7dd1681, file docs/gns3_file.json.
-Các kết nối loopback cần môi trường kiểm thử cho phép tạo socket cục bộ.
-
-Chưa chạy GUI Windows/GNS3/Npcap/VMware hoặc cài snmpd bằng root trên máy người
-dùng. Agent SNMP trong kiểm thử giao thức dùng PySNMP trên loopback; đây không
-phải bằng chứng service Net-SNMP đã chạy trên Ubuntu của bạn.
-Không gửi Telegram/Slack thật từ bộ test. Hoàn thành [TEST_PLAN.md](TEST_PLAN.md)
-để xác nhận toàn bộ lab và nhận tin trên tài khoản thực tế.
-
-Riêng trường hợp Windows không nhận SYN-ACK qua loopback, làm theo
-[WINDOWS_TAP_GNS3.md](../WINDOWS_TAP_GNS3.md). Cần kiểm tra SSH thành công trên
-Windows và mất kết nối khi tháo dây switch GNS3 trước khi xác nhận cách này đã
-khắc phục lỗi trên máy thật.
-
-## Cập nhật giảm tải SSH ngày 27/10/2026
-
-- `python -m unittest discover -s tests -v`: 126 tests, OK trong môi trường Linux
-  cho phép socket loopback; không gửi Telegram/Slack thật.
-- SSH loopback thật: hai lượt CPU/RAM/interface dùng một lần xác thực và hai
-  exec channel, mỗi lượt một channel.
-- Shell Linux thật trong fixture SSH: file interface không tồn tại được báo
-  UNKNOWN, CPU/RAM vẫn hợp lệ trong cùng lệnh gộp.
-- Kiểm thử reconnect khi transport mất hoặc kênh timeout, đóng tài nguyên,
-  giữ phân loại lỗi từng chỉ số và từ chối host key lạ vẫn đạt.
-- Chưa đo CPU sau sửa trên VM của người dùng. Phép đo tắt/bật trước sửa và các
-  bước xác nhận được ghi trong [SSH_CPU_TROUBLESHOOTING.md](SSH_CPU_TROUBLESHOOTING.md).
-
-## Dashboard và mô hình đồ án ngày 02/11/2026
-
-- Toàn bộ 141 unittest đạt trong môi trường Linux cho phép loopback.
-- SQLite: lưu mẫu/sự kiện cùng transaction với trạng thái/outbox; rollback,
-  dữ liệu cũ, kết nối DOWN, giữ secret ngoài JSON, retention không xóa outbox.
-- HTTP localhost thật: chỉ đọc, CSV, Host/Origin, giới hạn cửa sổ thời gian và
-  allowlist file; không phát sinh collector hoặc gọi dịch vụ nhắn tin.
-- Chromium: desktop 1600 px, mobile 390 px, biểu đồ, CSV, thông báo demo, mất
-  kết nối, mẫu cũ và nội dung sự kiện không được thực thi như HTML/JavaScript.
-- QTMNC_COURSE.gns3: 7 node, 2 switch access VLAN 10/30, 3 vùng ghi chú; hợp lệ
-  theo schema GNS3 revision 9 đã dẫn ở trên. Chưa mở GUI GNS3 trên Windows người dùng.
-- Báo cáo Word/PDF có tham chiếu 7 PDF người dùng cung cấp (265 trang), phân
-  biệt mô hình thiết kế, ảnh demo, kiểm thử mã và ca nghiệm thu cần đo thật.
+Ảnh dashboard ghi MÔ PHỎNG, không phải số đo thật. `docs/acceptance.csv` để CHUA_CHAY cho các bước trên máy Windows/GNS3. Không thay số liệu còn thiếu bằng kết quả tự tạo.

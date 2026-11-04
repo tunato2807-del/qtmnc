@@ -1,0 +1,5 @@
+python-docx>=1.1,<2
+python-pptx>=1.0,<2
+playwright>=1.50,<2
+# Graphviz, Chromium và LibreOffice cài bằng trình quản lý hệ điều hành.
+# Không cần các gói này để chạy NetWatch.

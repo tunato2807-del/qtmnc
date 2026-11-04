@@ -1,3 +1,1 @@
-{
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
-}
+{"python.defaultInterpreterPath":"${workspaceFolder}/.venv-netwatch/Scripts/python.exe","python.terminal.activateEnvironment":false,"files.exclude":{"**/__pycache__":true,"**/.venv":true}}

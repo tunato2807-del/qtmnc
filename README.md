@@ -1,121 +1,61 @@
-# Hệ thống giám sát thiết bị và cảnh báo Telegram/Slack
+# NetWatch — giám sát mạng định tuyến GNS3
 
-**Windows chạy Python trong VS Code → GNS3 → SSH tới Linux → Telegram/Slack.**
-Chương trình xem CPU, RAM, nhiệt độ và trạng thái card mạng, gửi cảnh báo khi lỗi
-và khi phục hồi.
+Bản **làm lại từ đầu** cho đồ án: Python trên Windows giám sát CPU, RAM, nhiệt độ và trạng thái cổng của **router Linux R1 + máy chủ Linux SRV1**, lưu lịch sử và gửi cảnh báo Telegram/Slack.
 
-**Bản đồ án có dashboard web và mô hình GNS3 7 node:** làm theo
-[COURSE_LAB.md](docs/COURSE_LAB.md). Mở [bộ báo cáo Word/PDF và sơ đồ](docs/course_project/README.md).
-[Tải hồ sơ đồ án dạng ZIP](docs/course_project/QTMNC_Course_Report.zip).
-Sau khi monitor chạy, mở Terminal khác: `.\run_dashboard.cmd`, rồi truy cập
-**http://127.0.0.1:8765**. Xem thử giao diện bằng `.\run_dashboard.cmd --demo`
-(có nhãn mô phỏng, không gửi tin). Dashboard đọc SQLite, không tăng số phiên SSH.
+![Mô hình mới](docs/figures/topology.png)
 
-**Xem [6 mô hình trực quan và giải thích từ đầu đến cuối](docs/truc_quan/README.md).**
-Tải [index.html](docs/truc_quan/index.html) rồi mở bằng Chrome/Edge để thử tăng
-RAM, ngắt interface, mất SSH và mất Internet trong mô phỏng. Trang chạy offline,
-không điều khiển thiết bị và không gửi tin thật. Có PNG/SVG và PDF đi kèm.
-[Tải trọn bộ trực quan dạng ZIP](docs/truc_quan/QTMNC_TrucQuan.zip).
+Mô hình dùng đúng tài nguyên bạn có: **hai full clone Ubuntu VMware, hai Ethernet switch tích hợp và hai VPCS**. R1 thực hiện IPv4 routing, NAT và luật chặn cổng quản trị từ mạng Users. Windows đi tới SRV1 qua R1 và switch GNS3. Có **0 node Cloud**, không cần TAP, router Cisco hoặc GNS3 VM.
 
-**[Tải slide PowerPoint 22 trang](docs/slides/QTMNC_Executive_Thuyet_trinh.pptx)**
-(cỡ chữ tối thiểu 20 pt, có thể sửa trực tiếp) · [Dàn ý chi tiết](docs/slides/QTMNC_Dan_y_22_slide.md) ·
-[Hướng dẫn dùng slide](docs/slides/README.md).
+## Bắt đầu trên Windows
 
-**Làm theo [HUONG_DAN_DON_GIAN.md](HUONG_DAN_DON_GIAN.md), từ bước 1 đến bước 6.**
+Mở PowerShell tại `D:\QTM_NC\telegram\qtmnc`, chạy từng dòng, không chép ký hiệu `PS>` hoặc số thứ tự:
 
-![Mô hình GNS3 đơn giản](docs/simple/topology.png)
+```powershell
+git pull --ff-only origin main
+.\setup.cmd
+.\start.cmd --demo
+```
 
-Chỉ **2 Cloud + 1 Ethernet switch** trong GNS3. Linux dùng 2 card VMware:
+Mở **http://127.0.0.1:8765** để xem giao diện minh họa. Chế độ demo không SSH và không gửi tin. Để triển khai thật, làm tuần tự **[Hướng dẫn GNS3 từng bước](docs/01_GNS3.md)** → **[Cấu hình giám sát](docs/02_SU_DUNG.md)** → **[Kịch bản nghiệm thu](docs/03_NGHIEM_THU.md)**.
 
-| Card Linux | Địa chỉ | Vai trò |
+Nếu tải gói ZIP: giải nén vào **thư mục mới**, bỏ dòng `git pull`, rồi chạy `setup.cmd` và `start.cmd --demo`. Không chép ZIP đè lên dự án cũ.
+
+![Dashboard mô phỏng](docs/figures/dashboard-demo.png)
+
+## Địa chỉ trong thiết kế mới
+
+| Thành phần | Địa chỉ | Vai trò |
 |---|---|---|
-| ens33, NAT/VMnet8 | 192.168.73.129 nếu DHCP chưa đổi | Internet Linux và card được theo dõi |
-| gns3mgmt, VMnet2 | 192.168.10.129 | SSH qua GNS3 |
+| Windows / VMnet8 | `192.168.73.1/24` | Chạy VS Code, Python, dashboard; gửi tin qua Internet của Windows |
+| R1 `mgmt0` | `192.168.73.10/24` | Card NAT gốc VMware; nhận kết nối từ Windows |
+| R1 `srv0` | `10.10.10.1/24` | Gateway mạng Servers |
+| SRV1 `lan0` | `10.10.10.10/24` | Thiết bị giám sát qua mạng GNS3 |
+| R1 `users0` | `10.20.20.1/24` | Gateway mạng Users |
+| PC01 / PC02 | `10.20.20.10/24`, `10.20.20.20/24` | VPCS thử ping và định tuyến |
 
-Windows VMnet1 .10.1 → Cloud → switch → Cloud VMnet2 → Linux .10.129.
-Windows VMnet2 để .20.1 như hướng dẫn, để đường SSH đi qua GNS3.
-Chưa cần router, VPCS, GNS3 VM, SNMP agent hoặc card VMware thứ ba.
+VMnet8 giữ subnet hiện có `192.168.73.0/24`, gateway NAT VMware `192.168.73.2`. IP `.10` phải chưa sử dụng và nằm ngoài pool DHCP. Dải VMnet nội bộ GNS3 phải khác các mạng `10.10.10.0/24`, `10.20.20.0/24` để tránh đường đi tắt.
 
-## Tải hoặc cập nhật
+## Có gì trong bản mới
 
-Tải lần đầu trong Terminal VS Code:
+- **Giám sát:** SSH giữ kết nối, một probe Python/chu kỳ; SNMPv2c tùy chọn qua Net-SNMP extend của cùng probe.
+- **Cảnh báo:** Ngưỡng, vùng phục hồi, UNKNOWN, mất kết nối, gộp thay đổi theo thiết bị/chu kỳ; hàng đợi SQLite thử lại khi gửi lỗi.
+- **Dashboard:** Hai thiết bị, CPU/RAM/nhiệt độ, nhiều interface, Rx/Tx Mbps, biểu đồ, sự kiện, CSV; chỉ mở trên localhost.
+- **Lab:** `create_lab.cmd` tạo `.gns3` sau khi chọn **hai VMX thật**; `lab/provision.py` cấu hình clone có backup và bản xem trước.
+- **Báo cáo:** [Bản Word](docs/report/Bao_cao_NetWatch.docx), [PDF](docs/report/Bao_cao_NetWatch.pdf), sơ đồ và bảng liên hệ bảy tài liệu môn học.
+- **Thuyết trình:** [PowerPoint 22 slide](docs/presentation/NetWatch_22_slide.pptx), chữ tối thiểu 20 pt và [dàn ý chi tiết](docs/presentation/Dan_y_22_slide.md).
 
-~~~powershell
-git clone https://github.com/tunato2807-del/qtmnc.git
-cd qtmnc
-code .
-~~~
+Secret nhập bằng `configure.cmd` và chỉ lưu trong `.env.netwatch`, được Git bỏ qua. File host key, dữ liệu SQLite và project sinh theo máy cũng được bỏ qua. Không sử dụng cấu hình, database hoặc môi trường ảo của ứng dụng cũ.
 
-Bạn đã có dự án:
+## Kiểm thử phần mềm
 
-~~~powershell
-cd D:\QTM_NC\telegram\qtmnc
-git fetch origin
-git merge --ff-only origin/main
-~~~
+```bash
+python -m venv .venv-test
+.venv-test/bin/python -m pip install -r requirements-dev.txt
+.venv-test/bin/python -m unittest discover -v
+```
 
-Không chép số thứ tự hoặc dấu PS ...> trước lệnh. Nếu Git báo có sửa đổi cục bộ,
-giữ lại và xử lý trước khi merge; không reset --hard.
+Trên Windows dùng `.venv-test\Scripts\python.exe`. Test giao thức dùng SSH/SNMP loopback và dữ liệu giả có kiểm soát; **không thay cho nghiệm thu GNS3/VMware trên máy bạn**. Xem [phạm vi xác minh](docs/VALIDATION.md).
 
-## Cài và chạy
+## Chuyển từ dự án cũ
 
-Sau khi nối mạng và SSH được 192.168.10.129 theo hướng dẫn:
-
-~~~powershell
-.\setup_windows.cmd --configure
-.\run_windows.cmd --test
-.\run_windows.cmd
-~~~
-
-Windows cần Python 3.10+. Bộ cài tự tạo .venv và cài thư viện SSH, HTTP, dotenv,
-Rich; không cần cài SNMP cho bản này. Chỉ hỏi IP, tài khoản, card mạng, mật khẩu
-và nơi nhận tin. Cấu hình lưu ở .env.simple, tự lấy lại secret từ file cũ cục bộ.
-Mật khẩu gõ không hiện ký tự là bình thường.
-
---test gửi tin thử thật. --once đọc một lần rồi dừng. F5 chạy cùng bản này.
-Mỗi vòng đọc xong chờ 5 giây. Ctrl+C dừng; tin chưa gửi được giữ để thử lại.
-Token/mật khẩu không nằm trong code và không được đẩy GitHub.
-
-Collector giữ lại kết nối SSH và gom các chỉ số Linux vào **một lệnh mỗi lượt**,
-giảm số lần xác thực và tạo phiên trên Ubuntu. Nếu CPU tăng cao khi bật monitor
-hoặc SSH hay timeout, xem [hướng dẫn đối chiếu và cập nhật](docs/SSH_CPU_TROUBLESHOOTING.md).
-
-## Đọc code theo thứ tự
-
-1. Mở **monitor.py**: luồng chính được đánh dấu bốn bước.
-2. Xem **examples/simple.env** để biết các giá trị cấu hình.
-3. Sửa ngưỡng trong **.env.simple** do bộ cài tạo.
-4. Khi cần hiểu chi tiết, đọc dần thư mục device_monitor.
-
-Chi tiết SSH, tính chỉ số và gửi lại tin dùng phần mã đã kiểm thử.
-File monitor.py tập trung vào luồng chạy để bạn dễ học và trình bày.
-
-| Mặc định | Cảnh báo | Phục hồi |
-|---|---|---|
-| CPU | >75% | <=70% |
-| RAM | >65% | <=60% |
-| Nhiệt độ | >65°C | <=60°C |
-| Interface | DOWN | UP |
-
-VM thường không có cảm biến nhiệt độ, nên UNKNOWN là đúng. Có thể chủ động tắt,
-hoặc dùng demo có nhãn MÔ PHỎNG theo hướng dẫn; không giả thành số đo phần cứng.
-Chỉ gửi khi đổi trạng thái, tránh lặp tin mỗi vòng. Đây là polling gần thời gian
-thực; mạng chậm và retry có thể làm tin tới muộn.
-
-## Khi cần mở rộng
-
-- [Hướng dẫn SNMP/hybrid, mạng thử riêng](docs/GNS3_LAB.md).
-- [Thiết kế chi tiết](docs/ARCHITECTURE.md).
-- [Kịch bản nghiệm thu mở rộng](docs/TEST_PLAN.md).
-- [Bộ 8 sơ đồ Word/PDF của mô hình mở rộng](docs/diagrams/README.md).
-
-Với lab Windows đã bắt được SYN-ACK nhưng không kết nối qua Cloud/loopback,
-xem [cách hỗ trợ kết nối TAP/UDP](WINDOWS_TAP_GNS3.md). Đây là công cụ hỗ trợ
-mạng của lab hiện tại, không phải chức năng bắt buộc của đề tài.
-
-Bản đơn giản chọn SSH cho hướng đề tài "SNMP/SSH". Nếu bắt buộc cả hai giao thức,
-dùng bản mở rộng: py -3 setup_project.py --profile gns3 --configure, rồi
-python -m device_monitor --env-file .env.gns3. .env và .env.gns3 cũ được giữ nguyên.
-
-Kiểm thử: python -m unittest discover -s tests -v. Bộ test dùng mock/loopback,
-không gửi tin tới tài khoản thật. GNS3/Npcap/VMware cần kiểm tra trên Windows.
+Đóng các tiến trình monitor/helper cũ, dùng `setup.cmd` tạo `.venv-netwatch` riêng. Các lệnh `run_windows.cmd`, `run_tap_windows.cmd` và mô hình Cloud cũ đã được bỏ khỏi bản đang dùng. Không cần xóa Ubuntu gốc, token cũ hoặc adapter Windows để cài bản mới. Lịch sử Git tại commit `961ac0b` giữ phiên bản trước để tham khảo/phục hồi.

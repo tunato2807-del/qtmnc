@@ -1,0 +1,24 @@
+digraph netwatch {
+ graph [rankdir=LR,bgcolor="#f5f8fd",pad=.45,nodesep=.55,ranksep=.65,fontname="DejaVu Sans",label="NETWATCH • MÔ HÌNH MẠNG ĐỊNH TUYẾN MỚI",labelloc=t,fontsize=22,fontcolor="#163157"];
+ node [shape=box,style="rounded,filled",fillcolor="white",color="#bed0e7",penwidth=1.5,fontname="DejaVu Sans",fontcolor="#193452",fontsize=12,margin=".18,.15"];
+ edge [fontname="DejaVu Sans",fontsize=10,color="#4977b9",fontcolor="#355e97",penwidth=1.7,arrowsize=.7];
+ win [label="WINDOWS THẬT\nVS Code + Python + Dashboard\nVMnet8: 192.168.73.1/24",fillcolor="#e4edff"];
+ nat [label="MẠNG NAT GỐC VMWARE\n192.168.73.0/24\nGateway Internet: 192.168.73.2",fillcolor="#eef3fa",style="rounded,filled,dashed"];
+ app [label="TELEGRAM / SLACK\nỨng dụng nhận cảnh báo",fillcolor="#dff5ed",color="#8cbfac"];
+ browser [label="TRÌNH DUYỆT WINDOWS\nhttp://127.0.0.1:8765\nChỉ localhost",fillcolor="#e4edff"];
+ subgraph cluster_gns3 {
+ label="GNS3 LOCAL • 6 NODE • KHÔNG CÓ CLOUD";color="#adbfdb";style="rounded,dashed";fontsize=15;fontcolor="#355e97";
+ r1 [label="R1-LINUX  |  Ubuntu VMware\nmgmt0: 192.168.73.10/24 (NAT)\nsrv0: 10.10.10.1/24\nusers0: 10.20.20.1/24\nIPv4 routing + NAT + ACL",fillcolor="#2761ce",fontcolor="white",color="#2761ce",fontsize=13];
+ sws [label="SW-SERVERS\nEthernet switch L2\n10.10.10.0/24"];
+ srv [label="SRV1-LINUX  |  Ubuntu VMware\nlan0: 10.10.10.10/24\nGateway: 10.10.10.1\nSSH / SNMP + probe",fillcolor="#e4edff"];
+ swu [label="SW-USERS\nEthernet switch L2\n10.20.20.0/24"];
+ pc1 [label="PC01 • VPCS\n10.20.20.10/24\nGW 10.20.20.1"];
+ pc2 [label="PC02 • VPCS\n10.20.20.20/24\nGW 10.20.20.1"];
+ r1 -> sws [label="srv0 ↔ adapter 1",dir=both];sws -> srv [label="Ethernet ↔ lan0",dir=both];
+ r1 -> swu [label="users0 ↔ adapter 2",dir=both];swu -> pc1 [dir=both];swu -> pc2 [dir=both];
+ }
+ win -> nat [dir=both,label="VMnet8 gốc"];
+ nat -> r1 [dir=both,label="adapter 0 • giữ NAT\nkhông nối link GNS3",style=dashed];
+ win -> browser [label="Web cục bộ",dir=both,color="#6998d5"];
+ win -> app [label="HTTPS qua Internet Windows",color="#36a080"];
+}

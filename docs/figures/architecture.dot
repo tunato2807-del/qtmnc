@@ -1,0 +1,15 @@
+digraph system {
+ graph [rankdir=LR,bgcolor="white",pad=.35,nodesep=.55,ranksep=.65,fontname="DejaVu Sans",label="NETWATCH • LUỒNG THU THẬP, LƯU TRỮ VÀ CẢNH BÁO",labelloc=t,fontsize=20,fontcolor="#163157"];
+ node [shape=box,style="rounded,filled",fillcolor="#eef4ff",color="#a3bfdf",fontname="DejaVu Sans",fontsize=12,margin=".15,.18"];
+ edge [fontname="DejaVu Sans",fontsize=10,color="#527daf",arrowsize=.7];
+ r1 [label="R1 + SRV1 Ubuntu\n/proc/stat • /proc/meminfo\n/sys/class/net • thermal"];
+ helper [label="Probe Python chỉ đọc\n1 lần lấy CPU / 1s\n1 dòng JSON"];
+ collector [label="Worker riêng / thiết bị\nSSH giữ phiên (mặc định)\nhoặc SNMPv2c extend"];
+ engine [label="Kiểm tra trạng thái\nNgưỡng + vùng phục hồi\nUNKNOWN ≠ 0\nGộp theo thiết bị / chu kỳ",fillcolor="#2761ce",fontcolor="white",color="#2761ce"];
+ db [shape=cylinder,label="SQLite cục bộ\nMẫu • trạng thái • sự kiện\nHàng đợi cảnh báo",fillcolor="#e3f4eb"];
+ web [label="Flask localhost\nDashboard nhiều thiết bị\nLịch sử • CSV"];
+ sender [label="Worker gửi tin\nThử lại khi lỗi\nGiữ tin qua restart"];
+ chat [label="Telegram / Slack\nCảnh báo + phục hồi",fillcolor="#e3f4eb"];
+ env [label=".env.netwatch\nSecret cục bộ\nGit bỏ qua",shape=note,fillcolor="#fff4d7"];
+ r1 -> helper -> collector -> engine -> db; db -> web; db -> sender -> chat; env -> collector [style=dashed];env -> sender [style=dashed];
+}

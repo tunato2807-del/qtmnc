@@ -1,0 +1,12 @@
+digraph states {
+ graph [rankdir=LR,bgcolor="white",pad=.4,fontname="DejaVu Sans",label="VÒNG ĐỜI MỘT CHỈ SỐ • VÍ DỤ CPU",labelloc=t,fontsize=20,fontcolor="#163157",ranksep=.8];
+ node [shape=box,style="rounded,filled",fontname="DejaVu Sans",fontsize=13,margin=".18,.18",color="#aac2df"];
+ edge [fontname="DejaVu Sans",fontsize=11,color="#527daf"];
+ ok [label="BÌNH THƯỜNG\nCPU ≤ 75% trước khi cảnh báo",fillcolor="#e2f5e9"];
+ alert [label="CẢNH BÁO\nCPU > 75%\nGiữ đến khi CPU ≤ 70%",fillcolor="#ffe6e6"];
+ unknown [label="KHÔNG CÓ DỮ LIỆU\nKhông gán CPU = 0%\nGiữ trạng thái hợp lệ trước đó",fillcolor="#fff1cc"];
+ ok -> alert [label="Vượt ngưỡng → gửi tin"];alert -> ok [label="≤ 70% → gửi phục hồi"];
+ ok -> unknown [label="Mất số đo"];alert -> unknown [label="Mất số đo"];
+ unknown -> alert [label="Có lại, còn cao\nThông báo vẫn cảnh báo"];
+ unknown -> ok [label="Có lại và bình thường"];
+}

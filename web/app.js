@@ -1,33 +1,68 @@
-"use strict";
-const el=id=>document.getElementById(id);
-const state={device:"",minutes:60,busy:false,last:null};
-const labels={OK:"Bình thường",ALERT:"Cảnh báo",UNKNOWN:"Không xác định"};
-const fmtTime=t=>new Date(t*1000).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-const setText=(id,value)=>{el(id).textContent=value;};
-const svgNS="http://www.w3.org/2000/svg";
-function markUnavailable(label){for(const metric of ["cpu","ram","temp","iface"]){setText(metric+"Value","—");setText(metric+"State",label);document.querySelector('[data-metric="'+metric+'"]').className="metric unknown";if(metric!=="iface")el(metric+"Meter").value=0;}setText("connection",label);}
-function svgNode(name,attrs,text){const n=document.createElementNS(svgNS,name);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;return n;}
-function renderChart(data){const svg=el("historyChart");svg.replaceChildren();const points=data.history;el("chartEmpty").hidden=!(!points.length);const left=32,right=824,top=16,bottom=229;
-for(let tick=0;tick<=100;tick+=25){const y=bottom-tick/100*(bottom-top);svg.append(svgNode("line",{x1:left,x2:right,y1:y,y2:y,class:"chart-grid"}));svg.append(svgNode("text",{x:0,y:y+4,class:"axis-label"},tick+"%"));}
-if(!points.length){setText("timeStart","—");setText("timeEnd","—");return;}
-const start=points[0].time,end=Math.max(start+1,points.at(-1).time),x=t=>left+(t-start)/(end-start)*(right-left),y=v=>bottom-v/100*(bottom-top);
-const limit=data.device.thresholds.cpu;if(Number.isFinite(limit))svg.append(svgNode("line",{x1:left,x2:right,y1:y(limit),y2:y(limit),class:"threshold"}));
-for(const metric of ["cpu","ram"]){let segment=[],previous=null;const flush=()=>{if(segment.length){svg.append(svgNode("polyline",{points:segment.join(" "),class:"history-line "+metric}));if(segment.length===1){const [cx,cy]=segment[0].split(",");svg.append(svgNode("circle",{cx,cy,r:2.5,fill:metric==="cpu"?"#55dcca":"#7d9bff"}));}}segment=[];};
-for(const p of points){const value=p.values[metric];if(p.connection!=="UP"||!Number.isFinite(value)){flush();previous=null;continue;}if(previous!==null&&p.time-previous>Math.max(30,data.device.interval*3+data.device.timeout))flush();segment.push(x(p.time).toFixed(1)+","+y(value).toFixed(1));previous=p.time;}flush();}
-setText("timeStart",fmtTime(start));setText("timeEnd",fmtTime(end));}
-function render(data){state.last=data;el("errorBanner").hidden=true;el("demoBanner").hidden=!data.demo;const d=data.device;
-if(!d){setText("liveBadge","Chưa có dữ liệu");setText("deviceHost","Chưa có thiết bị");setText("deviceDetail","Chạy .\\run_windows.cmd trong cửa sổ khác.");markUnavailable("Chưa có dữ liệu");return;}
-const live=data.fresh&&d.connection==="UP",status=!data.fresh?"Dữ liệu đã cũ":d.connection==="UP"?"Đang thu thập":"Mất kết nối";
-setText("liveBadge",data.demo?"MÔ PHỎNG":status);el("liveBadge").className="chip "+(!data.fresh?"stale":d.connection!=="UP"?"down":"");
-setText("deviceHost",d.host);setText("deviceDetail",d.protocol.toUpperCase()+" · Ubuntu VMware · interface "+d.iface+" · chu kỳ "+d.interval+"s");setText("connection",!data.fresh?"Chưa có mẫu mới":d.connection);setText("sampleAge",Math.round(d.age_seconds)+" giây trước");
-const select=el("device");const signature=JSON.stringify(data.devices);if(select.dataset.signature!==signature){select.replaceChildren();const auto=document.createElement("option");auto.value="";auto.textContent="Mới cập nhật nhất";select.append(auto);for(const item of data.devices){const option=document.createElement("option");option.value=item.key;option.textContent=item.host+" / "+item.iface;select.append(option);}select.value=state.device;select.dataset.signature=signature;}
-for(const metric of ["cpu","ram","temp","iface"]){const value=live?d.values[metric]:null;const disabled=metric==="temp"&&!d.temp_enabled;const valid=metric==="iface"?value!==null&&value!==undefined:Number.isFinite(value);const status=disabled||!valid?"UNKNOWN":d.states[metric]?.status||"UNKNOWN";const card=document.querySelector('[data-metric="'+metric+'"]');card.className="metric "+(status==="ALERT"?"alert":status==="UNKNOWN"?"unknown":"");
-setText(metric+"Value",!valid?"—":metric==="iface"?String(value).toUpperCase():value.toFixed(1));setText(metric+"State",disabled?"Đã tắt theo cấu hình":!data.fresh?"Dữ liệu đã cũ":!live?"Mất kết nối thiết bị":labels[status]);
-setText(metric+"Source",(d.sources[metric]||"—").replace("DEMO","MÔ PHỎNG"));if(metric!=="iface"){el(metric+"Meter").value=Number.isFinite(value)?Math.min(100,Math.max(0,value)):0;setText(metric+"Threshold","Cảnh báo > "+d.thresholds[metric]+(metric==="temp"?"°C":"%"));}card.title=d.errors[metric]||"";}
-setText("ifaceName",d.iface);el("topologyTarget").classList.toggle("down",!live);setText("sampleCount",data.summary.samples+" mẫu");
-el("successRate").replaceChildren(document.createTextNode(data.summary.connection_success_percent===null?"—":data.summary.connection_success_percent.toFixed(1)));const small=document.createElement("small");small.textContent="%";el("successRate").append(small);
-setText("successSamples",data.summary.connected_samples+" / "+data.summary.samples);setText("pendingCount",data.summary.pending);setText("eventCount",data.events.length+" sự kiện");el("queueList").replaceChildren();for(const q of data.queues){const row=document.createElement("div");row.className="queue-row";row.textContent=q.kind.toUpperCase()+": "+q.pending+" tin chờ · "+q.attempts+" lần thử trên tin đầu";el("queueList").append(row);}
-el("eventList").replaceChildren();if(!data.events.length){const p=document.createElement("p");p.className="empty";p.textContent="Chưa có sự kiện trong khoảng đã chọn.";el("eventList").append(p);}for(const event of data.events){const row=document.createElement("article");row.className="event-item "+event.severity.toLowerCase();const dot=document.createElement("span");dot.className="event-dot";const body=document.createElement("div"),message=document.createElement("div"),stamp=document.createElement("div");message.className="event-message";message.textContent=event.message;stamp.className="event-time";stamp.textContent=new Date(event.time*1000).toLocaleString("vi-VN");body.append(message,stamp);row.append(dot,body);el("eventList").append(row);}renderChart(data);}
-async function refresh(){if(state.busy)return;state.busy=true;try{const params=new URLSearchParams({minutes:state.minutes});if(state.device)params.set("device",state.device);const response=await fetch("/api/snapshot?"+params,{cache:"no-store"});if(!response.ok)throw new Error("Chưa đọc được dữ liệu (HTTP "+response.status+").");const data=await response.json();render(data);}catch(error){el("errorBanner").hidden=false;el("errorBanner").textContent=error.message+" Biểu đồ trước đó có thể đã cũ.";setText("liveBadge","Lỗi cập nhật");el("liveBadge").className="chip stale";markUnavailable("Lỗi cập nhật dữ liệu");}finally{state.busy=false;}}
-el("window").addEventListener("change",event=>{state.minutes=Number(event.target.value);refresh();});el("device").addEventListener("change",event=>{state.device=event.target.value;refresh();});el("export").addEventListener("click",()=>{const params=new URLSearchParams({minutes:state.minutes});if(state.device)params.set("device",state.device);window.location.href="/api/export.csv?"+params;});
-const updateClock=()=>setText("clock",new Date().toLocaleTimeString("vi-VN"));updateClock();setInterval(updateClock,1000);setInterval(refresh,3000);refresh();
+'use strict';
+const $ = id => document.getElementById(id);
+const clock = epoch => new Date(epoch * 1000).toLocaleTimeString('vi-VN', {hour12: false});
+const number = (n, unit = '%') => typeof n === 'number' ? n.toFixed(1) + unit : '—';
+const node = (tag, text, cls) => {const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e;};
+let selected = '', inventoryReady = false, pending = false;
+function badge(text, state) {return node('span', text, 'badge ' + state);}
+function deviceCard(d, all, cfg) {
+  const s = d.sample, fresh = d.freshness === 'fresh', connected = fresh && s && s.kind !== 'offline';
+  const card = node('article', undefined, 'device'), head = node('div', undefined, 'device-head'), title = node('div');
+  title.append(node('h3', d.name), node('div', d.host + ' · ' + d.protocol.toUpperCase(), 'address'));
+  const state = !s ? 'Chờ mẫu đầu' : !fresh ? 'Dữ liệu đã cũ' : s.kind === 'offline' ? 'Mất kết nối' : s.kind === 'unknown' ? 'Lỗi đọc chỉ số' : 'Đã kết nối';
+  head.append(title, badge(state, connected ? (s.kind === 'unknown' ? 'UNKNOWN' : 'OK') : s ? 'ALERT' : 'UNKNOWN')); card.append(head);
+  const metrics = node('div', undefined, 'metric-grid');
+  [['CPU','cpu_pct','%'],['RAM','ram_pct','%'],['Nhiệt độ','temperature_c','°C']].forEach(([label, key, unit]) => {
+    const value = connected ? s[key] : null, level = connected ? s.states[key] || 'UNKNOWN' : 'UNKNOWN';
+    const metric = node('div', undefined, 'metric ' + level);
+    metric.append(node('p', label), node('strong', number(value, unit)), node('small', key === 'temperature_c' && !cfg.monitor_temperature ? 'Không bật cảnh báo' : 'Ngưỡng > ' + cfg.thresholds[key] + unit)); metrics.append(metric);
+  }); card.append(metrics);
+  d.interfaces.forEach(name => {
+    const i = connected ? s.interfaces[name] || {} : {}, state = i.state || 'unknown';
+    const row = node('div', undefined, 'interface');
+    row.append(node('b', name), badge(state === 'unknown' ? 'N/A' : state.toUpperCase(), state === 'up' ? 'OK' : state === 'down' ? 'ALERT' : 'UNKNOWN'), node('span', '↓ ' + number(i.rx_mbps, '') + '  ↑ ' + number(i.tx_mbps, '') + ' Mbps', 'speed')); card.append(row);
+  });
+  if (s && (s.error || !fresh)) card.append(node('p', !fresh ? 'Mẫu cuối: ' + clock(s.at) + ' · kiểm tra tiến trình giám sát.' : s.error, 'device-note'));
+  if (d.parent) {
+    const parent = all.find(x => x.id === d.parent);
+    if (!connected && parent && parent.sample && (parent.sample.kind === 'offline' || parent.freshness !== 'fresh')) card.append(node('p', 'R1 cũng đang mất dữ liệu; cần kiểm tra đường đi qua router.', 'device-note'));
+  }
+  return card;
+}
+const NS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs, text) {const el = document.createElementNS(NS, tag); Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v)); if(text !== undefined) el.textContent = text; return el;}
+function drawChart(rows) {
+  const chart = $('chart'); chart.replaceChildren();
+  [0,25,50,75,100].forEach(v => {const y = 215 - v * 2; chart.append(svg('line',{x1:35,y1:y,x2:990,y2:y,stroke:'#e4ebf4'}),svg('text',{x:3,y:y+4,fill:'#7a889c','font-size':11},v));});
+  if (!rows.length) {chart.append(svg('text',{x:400,y:120,fill:'#78889c','font-size':15},'Đang chờ mẫu dữ liệu')); return;}
+  const first = rows[0].at, last = rows[rows.length-1].at;
+  [['cpu_pct','#2864dc'],['ram_pct','#078963']].forEach(([key,color]) => {
+    let path = '', pen = false;
+    rows.forEach(r => {if (typeof r[key] !== 'number') {pen = false;return;} const x=35+((r.at-first)/Math.max(1,last-first))*950,y=215-r[key]*2;path+=(pen?' L':' M')+x.toFixed(2)+' '+y.toFixed(2);pen=true;});
+    chart.append(svg('path',{d:path,fill:'none',stroke:color,'stroke-width':2.7,'stroke-linecap':'round'}));
+    if (rows.length === 1) chart.append(svg('circle',{cx:35,cy:215-rows[0][key]*2,r:3,fill:color}));
+  });
+  $('chart-start').textContent=clock(first);$('chart-end').textContent=clock(last);
+}
+async function json(url) {const response=await fetch(url,{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);return response.json();}
+async function refresh() {
+  if(pending)return;pending=true;
+  try {
+    const [cfg,events]=await Promise.all([json('/api/state'),json('/api/events')]);
+    $('mode').textContent=cfg.demo?'MÔ PHỎNG':'LAB THẬT';$('mode').className='badge '+(cfg.demo?'UNKNOWN':'OK');
+    $('notice').hidden=!cfg.demo;$('notice').textContent='CHẾ ĐỘ MÔ PHỎNG · Dữ liệu minh họa giao diện; không kết nối thiết bị và không gửi tin nhắn.';
+    $('updated').textContent='Cập nhật '+clock(cfg.at);
+    $('online').textContent=cfg.devices.filter(d=>d.freshness==='fresh'&&d.sample&&d.sample.kind!=='offline').length+' / '+cfg.devices.length;
+    $('alerts').textContent=cfg.devices.reduce((n,d)=>n+(d.freshness==='fresh'&&d.sample?Object.values(d.sample.states).filter(x=>x==='ALERT').length:0),0);
+    $('queue').textContent=cfg.queue.pending;$('channels').textContent=cfg.channels.length?cfg.channels.join(' + ')+(cfg.queue.retrying?' · đang thử lại':''):'Chưa cấu hình kênh';$('interval').textContent=cfg.interval+' giây';
+    $('devices').replaceChildren(...cfg.devices.map(d=>deviceCard(d,cfg.devices,cfg)));
+    if(!inventoryReady){cfg.devices.forEach(d=>{const option=node('option',d.name);option.value=d.id;$('device-select').append(option);});selected=cfg.devices[0].id;inventoryReady=true;}
+    $('export').href='/api/export?device='+encodeURIComponent(selected);
+    const rows=events.map(e=>{const tr=node('tr');const td=node('td');td.append(badge(e.state,e.state));tr.append(node('td',clock(e.at)),node('td',e.device.toUpperCase()),td,node('td',e.message));return tr;});
+    if(!rows.length){const tr=node('tr'),td=node('td','Chưa có sự kiện thay đổi trạng thái.','empty');td.colSpan=4;tr.append(td);rows.push(tr);}$('event-rows').replaceChildren(...rows);
+    drawChart(await json('/api/history?device='+encodeURIComponent(selected)));
+  } catch(error) {$('notice').hidden=false;$('notice').textContent='Không tải được dashboard. Kiểm tra cửa sổ chạy NetWatch; dữ liệu đang hiển thị có thể đã cũ.';$('mode').textContent='MẤT KẾT NỐI DASHBOARD';$('mode').className='badge ALERT';}
+  finally {pending=false;}
+}
+$('device-select').addEventListener('change',event=>{selected=event.target.value;refresh();});
+refresh();setInterval(refresh,3000);

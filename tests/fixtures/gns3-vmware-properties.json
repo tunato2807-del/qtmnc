@@ -1,0 +1,96 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "description": "VMware VM instance name",
+      "type": "string",
+      "minLength": 1
+    },
+    "usage": {
+      "description": "How to use the VMware VM",
+      "type": "string"
+    },
+    "node_id": {
+      "description": "Node UUID",
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "status": {
+      "description": "VM status",
+      "enum": [
+        "started",
+        "stopped",
+        "suspended"
+      ]
+    },
+    "node_directory": {
+      "description": "Path to the node working directory",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "project_id": {
+      "description": "Project UUID",
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "vmx_path": {
+      "description": "Path to the vmx file",
+      "type": "string",
+      "minLength": 1
+    },
+    "headless": {
+      "description": "Headless mode",
+      "type": "boolean"
+    },
+    "on_close": {
+      "description": "Action to execute on the VM is closed",
+      "enum": [
+        "power_off",
+        "shutdown_signal",
+        "save_vm_state"
+      ]
+    },
+    "adapters": {
+      "description": "Number of adapters",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "adapter_type": {
+      "description": "VMware adapter type",
+      "type": "string",
+      "minLength": 1
+    },
+    "use_any_adapter": {
+      "description": "Allow GNS3 to use any VMware adapter",
+      "type": "boolean"
+    },
+    "console": {
+      "description": "Console TCP port",
+      "minimum": 1,
+      "maximum": 65535,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "console_type": {
+      "description": "Console type",
+      "enum": [
+        "telnet",
+        "none"
+      ]
+    },
+    "linked_clone": {
+      "description": "Whether the VM is a linked clone or not",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
