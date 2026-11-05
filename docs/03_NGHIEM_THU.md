@@ -2,6 +2,8 @@
 
 Chỉ đánh dấu **Đạt** sau khi chạy trên máy Windows/GNS3 thực tế. Kết quả test phần mềm không thay thế phần này. Tạo bản sao [bảng kết quả](acceptance.csv) để ghi thời gian, số đo và đường dẫn ảnh.
 
+Các mã bổ sung từ Buổi 5: **B501** đo10 ICMP/đích và so sánh RTT/loss; **B502** HTTP 200→503→200 và phản hồi chậm4s; **B503** iperf3 hai chiều, giới hạn20 Mbps; **B504** CSV tự ghi và báo cáo HTML/PDF. Làm theo [05_BUOI_5.md](05_BUOI_5.md), ghi kết quả thật vào acceptance.csv.
+
 ## Chuẩn bị
 
 R1/SRV1/PC01/PC02 chạy; hai tuyến Windows đúng; NetWatch chạy chế độ thật; tài khoản/kênh đã nhập. Chụp mô hình GNS3, `ip -br addr` trên hai clone, `Find-NetRoute` và TCP22 thành công. Che token, mật khẩu và webhook trong mọi hình.

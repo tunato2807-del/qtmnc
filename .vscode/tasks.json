@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {"label":"NetWatch: 1. Cài môi trường Windows","type":"shell","command":".\\setup.cmd","options":{"cwd":"${workspaceFolder}"},"problemMatcher":[]},
+    {"label":"NetWatch: 2. Xem dashboard demo","type":"shell","command":".\\start.cmd --demo","options":{"cwd":"${workspaceFolder}"},"problemMatcher":[]},
+    {"label":"NetWatch: 3. Mở sơ đồ GNS3 ngay","type":"shell","command":".\\open_gns3_preview.cmd","options":{"cwd":"${workspaceFolder}"},"problemMatcher":[]},
+    {"label":"NetWatch: 4. Tạo và mở lab Ubuntu thật","type":"shell","command":".\\open_gns3_lab.cmd","options":{"cwd":"${workspaceFolder}"},"problemMatcher":[]},
+    {"label":"NetWatch: 5. Chạy cấu hình Buổi 5","type":"shell","command":".\\start_buoi5.cmd","options":{"cwd":"${workspaceFolder}"},"problemMatcher":[]},
+    {"label":"NetWatch: 6. Xuất báo cáo HTML","type":"shell","command":".\\export_report.cmd","options":{"cwd":"${workspaceFolder}"},"problemMatcher":[]}
+  ]
+}

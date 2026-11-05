@@ -1,11 +1,58 @@
 {
   "interval_seconds": 15,
   "timeout_seconds": 12,
-  "thresholds": {"cpu_pct": 75, "ram_pct": 65, "temperature_c": 65},
+  "thresholds": {
+    "cpu_pct": 75,
+    "ram_pct": 65,
+    "temperature_c": 65
+  },
   "hysteresis": 5,
   "monitor_temperature": false,
   "devices": [
-    {"id": "r1", "name": "R1-LINUX", "role": "Router Linux", "host": "192.168.73.10", "protocol": "ssh", "credential_prefix": "R1", "interfaces": ["mgmt0", "srv0", "users0"]},
-    {"id": "srv1", "name": "SRV1-LINUX", "role": "Máy chủ được giám sát", "host": "10.10.10.10", "protocol": "ssh", "credential_prefix": "SRV1", "parent": "r1", "interfaces": ["lan0"]}
-  ]
+    {
+      "id": "r1",
+      "name": "R1-LINUX",
+      "role": "Router Linux",
+      "host": "192.168.73.10",
+      "protocol": "ssh",
+      "credential_prefix": "R1",
+      "interfaces": [
+        "mgmt0",
+        "srv0",
+        "users0"
+      ]
+    },
+    {
+      "id": "srv1",
+      "name": "SRV1-LINUX",
+      "role": "Máy chủ được giám sát",
+      "host": "10.10.10.10",
+      "protocol": "ssh",
+      "credential_prefix": "SRV1",
+      "parent": "r1",
+      "interfaces": [
+        "lan0"
+      ]
+    }
+  ],
+  "csv_enabled": false,
+  "checks": {
+    "enabled": true,
+    "interval_seconds": 60,
+    "ping_count": 10,
+    "ping_timeout_ms": 1000,
+    "latency_ms": 100,
+    "packet_loss_pct": 20,
+    "http_timeout_seconds": 5,
+    "http_slow_seconds": 3,
+    "http_services": [
+      {
+        "id": "srv1-web",
+        "name": "Web SRV1",
+        "device": "srv1",
+        "url": "http://10.10.10.10:8000/",
+        "enabled": false
+      }
+    ]
+  }
 }

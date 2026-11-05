@@ -2,6 +2,10 @@
 
 Bản **làm lại từ đầu** cho đồ án: Python trên Windows giám sát CPU, RAM, nhiệt độ và trạng thái cổng của **router Linux R1 + máy chủ Linux SRV1**, lưu lịch sử và gửi cảnh báo Telegram/Slack.
 
+**Tải và mở bằng VS Code:** xem [hướng dẫn từng lần bấm](docs/00_TAI_BANG_VSCODE.md). File [NETWATCH_XEM_NGAY.gns3](lab/gns3/NETWATCH_XEM_NGAY.gns3) mở được ngay để xem sơ đồ, không chứa VM hoặc đường dẫn VMX giả. Chạy `open_gns3_lab.cmd` để tạo/mở topology Ubuntu thật sau khi chọn hai VMX trên máy bạn.
+
+**Bổ sung từ Buổi 5:** đo RTT/mất gói, giám sát HTTP 200/chậm>3s, CSV tự ghi, iperf3 theo yêu cầu và báo cáo HTML/PDF. [Bảng đối chiếu cả 10 lab và cách thực hiện](docs/05_BUOI_5.md). Profile `start_buoi5.cmd` dùng 5s/CPU85%/RAM90%; profile đồ án vẫn 15s/75%/65%.
+
 ![Mô hình mới](docs/figures/topology.png)
 
 Mô hình dùng đúng tài nguyên bạn có: **hai full clone Ubuntu VMware, hai Ethernet switch tích hợp và hai VPCS**. R1 thực hiện IPv4 routing, NAT và luật chặn cổng quản trị từ mạng Users. Windows đi tới SRV1 qua R1 và switch GNS3. Có **0 node Cloud**, không cần TAP, router Cisco hoặc GNS3 VM.
@@ -40,11 +44,14 @@ VMnet8 giữ subnet hiện có `192.168.73.0/24`, gateway NAT VMware `192.168.73
 - **Giám sát:** SSH giữ kết nối, một probe Python/chu kỳ; SNMPv2c tùy chọn qua Net-SNMP extend của cùng probe.
 - **Cảnh báo:** Ngưỡng, vùng phục hồi, UNKNOWN, mất kết nối, gộp thay đổi theo thiết bị/chu kỳ; hàng đợi SQLite thử lại khi gửi lỗi.
 - **Dashboard:** Hai thiết bị, CPU/RAM/nhiệt độ, nhiều interface, Rx/Tx Mbps, biểu đồ, sự kiện, CSV; chỉ mở trên localhost.
+- **Chất lượng mạng/dịch vụ:** RTT, packet loss, HTTP status/thời gian nhận header, cảnh báo/phục hồi và lịch sử; tải HTML độc lập rồi in PDF.
 - **Lab:** `create_lab.cmd` tạo `.gns3` sau khi chọn **hai VMX thật**; `lab/provision.py` cấu hình clone có backup và bản xem trước.
 - **Báo cáo:** [Bản Word](docs/report/Bao_cao_NetWatch.docx), [PDF](docs/report/Bao_cao_NetWatch.pdf), sơ đồ và bảng liên hệ bảy tài liệu môn học.
 - **Thuyết trình:** [PowerPoint 22 slide](docs/presentation/NetWatch_22_slide.pptx), chữ tối thiểu 20 pt và [dàn ý chi tiết](docs/presentation/Dan_y_22_slide.md).
 
 Secret nhập bằng `configure.cmd` và chỉ lưu trong `.env.netwatch`, được Git bỏ qua. File host key, dữ liệu SQLite và project sinh theo máy cũng được bỏ qua. Không sử dụng cấu hình, database hoặc môi trường ảo của ứng dụng cũ.
+
+Phép đo ICMP chạy mỗi 60s; dịch vụ HTTP chỉ bật khi bạn chạy web mẫu và chọn profile Buổi 5. iperf3 không tự chạy định kỳ hoặc tải đường mạng liên tục.
 
 ## Kiểm thử phần mềm
 

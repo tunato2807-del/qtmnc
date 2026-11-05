@@ -13,3 +13,5 @@ Nguồn do người dùng tải lên: **7 PDF, tổng 265 trang**; danh mục v�
 | Chương 6 — Quản lý bảo mật | 16, 18–19, 27 | Kiểm tra cấu hình, nhật ký sự kiện, tài khoản không sudo, host key, secret cục bộ, backup/rollback | Không triển khai SIEM/SOAR/EDR hoặc đáp ứng sự cố bảo mật toàn diện |
 
 Đồ án lấy **giám sát CPU/RAM/nhiệt độ/interface và gửi cảnh báo** làm bài toán chính. Router, mạng hai nhánh, ACL, dashboard và lịch sử cung cấp bối cảnh triển khai/kiểm chứng; không đổi đề tài thành triển khai VPN/SDN.
+
+Nguồn bổ sung: **Bài tập thực hành buổi 5.docx** — áp dụng Lab1/2/3/4/6/10 vào CSV, RTT/mất gói, iperf3, HTTP, bắt gói và báo cáo HTML/PDF. Xem [đối chiếu chi tiết cả 10 lab](05_BUOI_5.md). Không tuyên bố đã triển khai các Lab7/8/9 về phát hiện tấn công và tự chặn IP.

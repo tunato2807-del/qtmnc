@@ -3,9 +3,12 @@ import json
 import math
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 IFACE = re.compile(r"^[a-zA-Z0-9_.:-]{1,32}$")
+CHECK_DEFAULTS = {"enabled": False, "interval_seconds": 60, "ping_count": 10, "ping_timeout_ms": 1000,
+                  "latency_ms": 100, "packet_loss_pct": 20, "http_timeout_seconds": 5, "http_slow_seconds": 3, "http_services": []}
 
 
 def load_inventory(path=ROOT / "inventory.json"):
@@ -44,6 +47,33 @@ def load_inventory(path=ROOT / "inventory.json"):
         parent = device.get("parent")
         if parent and (parent not in ids or parent == device["id"]):
             raise ValueError("Thiết bị cha không hợp lệ")
+    if not isinstance(cfg.get("checks", {}), dict):
+        raise ValueError("checks phải là object JSON")
+    checks = cfg["checks"] = {**CHECK_DEFAULTS, **cfg.get("checks", {})}
+    if not isinstance(checks["enabled"], bool) or not isinstance(cfg.get("csv_enabled", False), bool):
+        raise ValueError("checks.enabled và csv_enabled phải là true/false")
+    limits = {"interval_seconds": (30, 3600), "ping_count": (1, 20), "ping_timeout_ms": (100, 3000),
+              "latency_ms": (1, 10000), "packet_loss_pct": (0, 100), "http_timeout_seconds": (1, 30), "http_slow_seconds": (0.1, 30)}
+    for key, (low, high) in limits.items():
+        value = checks[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not low <= value <= high:
+            raise ValueError("Tham số checks không hợp lệ: " + key)
+    if not isinstance(checks["ping_count"], int) or not isinstance(checks["ping_timeout_ms"], int):
+        raise ValueError("Số gói và timeout ping phải là số nguyên")
+    services, service_ids = checks["http_services"], set()
+    if not isinstance(services, list) or len(services) > 10:
+        raise ValueError("Cần danh sách HTTP tối đa 10 dịch vụ")
+    devices_by_id = {d["id"]: d for d in cfg["devices"]}
+    for service in services:
+        if not isinstance(service, dict) or not all(isinstance(service.get(k), str) and service[k] for k in ("id", "name", "device", "url")):
+            raise ValueError("Thông tin dịch vụ HTTP không hợp lệ")
+        sid = service["id"]
+        if not re.fullmatch(r"[a-z][a-z0-9_-]{0,31}", sid) or sid in service_ids or service["device"] not in devices_by_id or not isinstance(service.get("enabled", False), bool):
+            raise ValueError("ID/thiết bị/trạng thái HTTP không hợp lệ")
+        service_ids.add(sid)
+        url = urlsplit(service["url"])
+        if url.scheme not in ("http", "https") or url.hostname != devices_by_id[service["device"]]["host"] or url.username or url.password or url.query or url.fragment or (url.port is not None and not 1 <= url.port <= 65535):
+            raise ValueError("HTTP URL phải thuộc thiết bị trong inventory, không chứa secret/query")
     return cfg
 
 

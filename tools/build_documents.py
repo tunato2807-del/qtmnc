@@ -71,6 +71,10 @@ def build_report():
             path = (source.parent / match[2]).resolve()
             # Dashboard dọc: thu gọn bản xem báo cáo; PNG/SVG gốc có kèm riêng.
             width = DInches(5.0 if "dashboard" in path.name else 6.65)
+            if "dashboard" in path.name:
+                from PIL import Image
+                with Image.open(path) as image:
+                    width = DInches(min(5.0, 6.8 * image.width / image.height))
             doc.add_picture(str(path), width=width)
             p = doc.add_paragraph(match[1])
             p.alignment = 1
@@ -161,7 +165,7 @@ def build_slides():
                 text(slide,keyword+":",x+.22,3.78,3.42,.65,24,NAVY,True)
                 text(slide,explanation.strip(),x+.22,4.48,3.42,1.08,22,MUTED)
         text(slide,data["evidence"],.6,6.15,12.1,.65,20,MUTED)
-        text(slide,"THIẾT KẾ MỚI · 04/11/2026",.6,7.02,10,.3,20,MUTED)
+        text(slide,"THIẾT KẾ MỚI · 05/11/2026",.6,7.02,10,.3,20,MUTED)
         text(slide,f"{number:02d} / {len(content)}",11.4,7.02,1.4,.3,20,BLUE,True)
         notes = "Thông điệp cốt lõi: " + data["message"] + "\n" + "\n".join(data["points"]) + "\nSố liệu/Minh chứng: " + data["evidence"] + "\nGợi ý trực quan: " + data["visual"]
         slide.notes_slide.notes_text_frame.text = notes

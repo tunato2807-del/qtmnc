@@ -1,1 +1,36 @@
-{"version":"0.2.0","configurations":[{"name":"NetWatch — dashboard mô phỏng","type":"debugpy","request":"launch","module":"netwatch","args":["--demo"],"cwd":"${workspaceFolder}","console":"integratedTerminal"},{"name":"NetWatch — lab thật","type":"debugpy","request":"launch","module":"netwatch","cwd":"${workspaceFolder}","console":"integratedTerminal"}]}
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NetWatch — dashboard mô phỏng",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "netwatch",
+      "args": [
+        "--demo"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "NetWatch — lab thật",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "netwatch",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "NetWatch — Bài thực hành Buổi 5",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "netwatch",
+      "args": [
+        "--inventory",
+        "inventory.buoi5.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}

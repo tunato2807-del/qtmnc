@@ -36,7 +36,7 @@ def main():
             return
         if args.demo and args.web_only:
             parser.error("Chọn demo hoặc web-only")
-        store = Store(":memory:" if args.demo else ROOT / "data/netwatch.sqlite3", demo=args.demo)
+        store = Store(":memory:" if args.demo else ROOT / "data/netwatch.sqlite3", demo=args.demo, csv_path=ROOT / "data/system_metrics.csv" if cfg.get("csv_enabled") else None)
         service = Service(cfg, store, demo=args.demo)
         if not args.web_only:
             service.start()

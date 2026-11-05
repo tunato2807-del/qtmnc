@@ -50,5 +50,16 @@
       "chars": 12338,
       "sha256": "89becef2f415573501498bf03278f5d5af50c2664fcdea15851e3f2002efac33"
     }
+  ],
+  "additional_sources": [
+    {
+      "key": "source-8",
+      "filename": "Bài tập thực hành buổi 5.docx",
+      "format": "docx",
+      "sha256": "3928a4d0162f2ee5a1d260105f4951f583bd71241bb1f792cc6297fdec3a7ea1",
+      "paragraphs": 813,
+      "labs": 10,
+      "duration_periods": 6
+    }
   ]
 }

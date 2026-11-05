@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 const clock = epoch => new Date(epoch * 1000).toLocaleTimeString('vi-VN', {hour12: false});
 const number = (n, unit = '%') => typeof n === 'number' ? n.toFixed(1) + unit : '—';
 const node = (tag, text, cls) => {const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e;};
-let selected = '', inventoryReady = false, pending = false;
+let selected = '', selectedHealth = '', inventoryReady = false, healthReady = false, pending = false;
 function badge(text, state) {return node('span', text, 'badge ' + state);}
 function deviceCard(d, all, cfg) {
   const s = d.sample, fresh = d.freshness === 'fresh', connected = fresh && s && s.kind !== 'offline';
@@ -44,25 +44,53 @@ function drawChart(rows) {
   });
   $('chart-start').textContent=clock(first);$('chart-end').textContent=clock(last);
 }
+function healthCard(check) {
+  const card=node('article',undefined,'health-card'), s=check.sample, fresh=check.freshness==='fresh';
+  const state=fresh&&s?s.state:'UNKNOWN', heading=node('div',undefined,'device-head');
+  heading.append(node('b',check.name),badge(check.freshness==='disabled'?'Chưa bật':check.freshness==='waiting'?'Chờ mẫu':check.freshness==='stale'?'Mẫu cũ':state,state));card.append(heading);
+  if(check.kind==='ping'){
+    card.append(node('strong',number(fresh&&s?s.rtt_avg_ms:null,' ms')));
+    card.append(node('p','Mất gói: '+number(fresh&&s?s.packet_loss_pct:null)+' · '+(fresh&&s&&typeof s.received==='number'?s.received+'/'+s.sent+' phản hồi':'Chưa có bộ đếm'),'muted'));
+  } else {
+    card.append(node('strong',fresh&&s&&s.status_code!==null?'HTTP '+s.status_code:'—'));
+    card.append(node('p',fresh&&s?'Thời gian: '+number(s.response_ms,' ms'):'Bật sau khi khởi chạy Web SRV1','muted'));
+  }
+  if(fresh&&s&&s.detail)card.append(node('small',s.detail));
+  return card;
+}
+function drawRTT(rows) {
+  const chart=$('rtt-chart');chart.replaceChildren();
+  const values=rows.filter(r=>typeof r.rtt_avg_ms==='number').map(r=>r.rtt_avg_ms), top=Math.max(5,...values)*1.2;
+  [0,.5,1].forEach(r=>{const y=150-r*130;chart.append(svg('line',{x1:50,y1:y,x2:990,y2:y,stroke:'#e4ebf4'}),svg('text',{x:2,y:y+4,fill:'#7a889c','font-size':11},(r*top).toFixed(1)+'ms'));});
+  let path='',pen=false;
+  rows.forEach((r,i)=>{if(typeof r.rtt_avg_ms!=='number'){pen=false;return;}path+=(pen?' L':' M')+(50+940*i/Math.max(1,rows.length-1)).toFixed(2)+' '+(150-r.rtt_avg_ms/top*130).toFixed(2);pen=true;});
+  chart.append(svg('path',{d:path,fill:'none',stroke:'#7954c7','stroke-width':2.7}));
+  if(!values.length)chart.append(svg('text',{x:360,y:92,fill:'#78889c','font-size':14},'Chưa có số đo RTT hợp lệ'));
+}
 async function json(url) {const response=await fetch(url,{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);return response.json();}
 async function refresh() {
   if(pending)return;pending=true;
   try {
-    const [cfg,events]=await Promise.all([json('/api/state'),json('/api/events')]);
+    const [cfg,events,health]=await Promise.all([json('/api/state'),json('/api/events'),json('/api/health')]);
     $('mode').textContent=cfg.demo?'MÔ PHỎNG':'LAB THẬT';$('mode').className='badge '+(cfg.demo?'UNKNOWN':'OK');
     $('notice').hidden=!cfg.demo;$('notice').textContent='CHẾ ĐỘ MÔ PHỎNG · Dữ liệu minh họa giao diện; không kết nối thiết bị và không gửi tin nhắn.';
     $('updated').textContent='Cập nhật '+clock(cfg.at);
     $('online').textContent=cfg.devices.filter(d=>d.freshness==='fresh'&&d.sample&&d.sample.kind!=='offline').length+' / '+cfg.devices.length;
-    $('alerts').textContent=cfg.devices.reduce((n,d)=>n+(d.freshness==='fresh'&&d.sample?Object.values(d.sample.states).filter(x=>x==='ALERT').length:0),0);
+    $('alerts').textContent=cfg.devices.reduce((n,d)=>n+(d.freshness==='fresh'&&d.sample?Object.values(d.sample.states).filter(x=>x==='ALERT').length:0),0)+health.items.filter(c=>c.freshness==='fresh'&&c.sample&&c.sample.state==='ALERT').length;
     $('queue').textContent=cfg.queue.pending;$('channels').textContent=cfg.channels.length?cfg.channels.join(' + ')+(cfg.queue.retrying?' · đang thử lại':''):'Chưa cấu hình kênh';$('interval').textContent=cfg.interval+' giây';
     $('devices').replaceChildren(...cfg.devices.map(d=>deviceCard(d,cfg.devices,cfg)));
+    $('health-cards').replaceChildren(...health.items.map(healthCard));
+    $('health-period').textContent='Chu kỳ '+health.interval+'s · HTTP chậm >'+health.http_slow_seconds+'s';
+    if(!healthReady){health.items.filter(c=>c.kind==='ping').forEach(c=>{const option=node('option',c.name);option.value=c.id;$('health-select').append(option);});selectedHealth='ping-'+cfg.devices[0].id;healthReady=true;}
     if(!inventoryReady){cfg.devices.forEach(d=>{const option=node('option',d.name);option.value=d.id;$('device-select').append(option);});selected=cfg.devices[0].id;inventoryReady=true;}
     $('export').href='/api/export?device='+encodeURIComponent(selected);
     const rows=events.map(e=>{const tr=node('tr');const td=node('td');td.append(badge(e.state,e.state));tr.append(node('td',clock(e.at)),node('td',e.device.toUpperCase()),td,node('td',e.message));return tr;});
     if(!rows.length){const tr=node('tr'),td=node('td','Chưa có sự kiện thay đổi trạng thái.','empty');td.colSpan=4;tr.append(td);rows.push(tr);}$('event-rows').replaceChildren(...rows);
-    drawChart(await json('/api/history?device='+encodeURIComponent(selected)));
+    const [metrics,network]=await Promise.all([json('/api/history?device='+encodeURIComponent(selected)),json('/api/health/history?check='+encodeURIComponent(selectedHealth))]);
+    drawChart(metrics);drawRTT(network);
   } catch(error) {$('notice').hidden=false;$('notice').textContent='Không tải được dashboard. Kiểm tra cửa sổ chạy NetWatch; dữ liệu đang hiển thị có thể đã cũ.';$('mode').textContent='MẤT KẾT NỐI DASHBOARD';$('mode').className='badge ALERT';}
   finally {pending=false;}
 }
 $('device-select').addEventListener('change',event=>{selected=event.target.value;refresh();});
+$('health-select').addEventListener('change',event=>{selectedHealth=event.target.value;refresh();});
 refresh();setInterval(refresh,3000);

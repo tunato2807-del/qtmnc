@@ -35,7 +35,7 @@
 - FCAPS: Trọng tâm quản lý lỗi và hiệu suất.
 - Python: JSON, Paramiko, xử lý lỗi và kiểm thử.
 - Bảo mật: Phân đoạn, ít quyền và bảo vệ secret.
-- Số liệu/Minh chứng: Nguồn: 7 PDF, tổng 265 trang; bảng đối chiếu trong báo cáo.
+- Số liệu/Minh chứng: Nguồn: 7 PDF (265 trang) và Bài tập thực hành buổi 5.docx (10 lab).
 - Gợi ý trực quan: Sơ đồ ba trụ cột kiến thức.
 
 ---
@@ -149,14 +149,14 @@
 - Gợi ý trực quan: Sơ đồ hàng đợi và nhánh gửi lại.
 
 ---
-[SLIDE 16: Dashboard và dữ liệu lịch sử]
+[SLIDE 16: Dashboard và báo cáo tự động]
 
-- Thông điệp cốt lõi: Một màn hình kết hợp hiện trạng, xu hướng và sự kiện.
-- Thiết bị: CPU/RAM, nhiệt độ, cổng và Rx/Tx Mbps.
-- Xu hướng: Chọn R1/SRV1, xem biểu đồ và tải CSV.
-- Tính mới: Đánh dấu mẫu cũ, không giả số đo thiếu.
-- Số liệu/Minh chứng: Web localhost:8765; tối đa 24h, 5.000 mẫu/thiết bị, 1.000 sự kiện.
-- Gợi ý trực quan: Wireframe bốn vùng dashboard.
+- Thông điệp cốt lõi: Kết hợp tài nguyên, chất lượng đường truyền và trạng thái dịch vụ.
+- Chỉ số: CPU/RAM/RTT, mất gói và HTTP.
+- Báo cáo: CSV/HTML độc lập, in PDF từ trình duyệt.
+- Lịch sử: Gắn mỗi mẫu với thiết bị và thời điểm.
+- Số liệu/Minh chứng: Vận dụng Lab 2, 4, 10 của Buổi 5; không dùng số đo demo làm kết quả thật.
+- Gợi ý trực quan: Wireframe thẻ ICMP/HTTP, biểu đồ RTT và nút xuất báo cáo.
 
 ---
 [SLIDE 17: Bảo mật và quản lý cấu hình]
@@ -175,25 +175,25 @@
 - Chuẩn bị: Full clone, cài gói, gắn đúng card.
 - Dựng lab: Chọn VMX, Start node, provision và route.
 - Vận hành: Nhập secret, trust host key, mở dashboard.
-- Số liệu/Minh chứng: Hướng dẫn chia rõ lệnh Windows, console Ubuntu và console VPCS.
+- Số liệu/Minh chứng: VS Code Run Task: mở sơ đồ ngay hoặc chọn hai VMX để tạo lab chạy thật.
 - Gợi ý trực quan: Ba giai đoạn chuẩn bị–mạng–ứng dụng.
 
 ---
-[SLIDE 19: Kịch bản thử nghiệm đồ án]
+[SLIDE 19: Thực hành theo bài Buổi 5]
 
-- Thông điệp cốt lõi: Mỗi chức năng phải có tác động, quan sát và bằng chứng phục hồi.
-- Tài nguyên: Tải CPU/RAM có thời hạn 45s.
-- Kết nối: Tắt/bật users0 hoặc SSH của SRV1.
-- Tin nhắn: Ngắt/khôi phục Internet để thử hàng đợi.
-- Số liệu/Minh chứng: Đo t0 tác động, t1 dashboard, t2 nhận tin; tối thiểu 3 lần/kịch bản.
-- Gợi ý trực quan: Ma trận tác động–cảnh báo–phục hồi.
+- Thông điệp cốt lõi: Tạo tác động có kiểm soát, ghi số đo và xác minh cảnh báo/phục hồi.
+- Tài nguyên: CPU/RAM và CSV theo profile Buổi 5.
+- Dịch vụ: ICMP mất gói, HTTP 503 và chậm 4s.
+- Đường mạng: iperf3 giới hạn tải và capture 50 gói.
+- Số liệu/Minh chứng: Profile: 5s/CPU85%/RAM90%; ICMP 10 gói; HTTP chậm >3s.
+- Gợi ý trực quan: Ma trận tác động–số đo–cảnh báo–phục hồi.
 
 ---
 [SLIDE 20: Kết quả xác minh hiện có]
 
 - Thông điệp cốt lõi: Phần mềm đã kiểm thử; nghiệm thu VMware/GNS3 thật còn phải bổ sung.
-- Tự động: 26 test logic, DB, web và lab đạt.
-- Giao thức: SSH/SNMP trao đổi qua loopback thật.
+- Tự động: 50 test logic, giao thức, web và lab đạt.
+- Giao thức: SSH/SNMP/HTTP qua loopback thực.
 - Nghiệm thu: Checklist Windows/GNS3 để CHUA_CHAY.
 - Số liệu/Minh chứng: Ảnh dashboard dùng dữ liệu MÔ PHỎNG; không là số đo VM thật.
 - Gợi ý trực quan: Hai cột đã kiểm thử và cần nghiệm thu.

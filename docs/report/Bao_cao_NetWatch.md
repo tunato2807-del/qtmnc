@@ -6,7 +6,7 @@ Sinh viên: .................................. | Mã số: .....................
 
 Lớp: ....................................... | Giảng viên: ..............................
 
-Phiên bản thiết kế: 2.0 · Ngày soạn: 04/11/2026.
+Phiên bản thiết kế: 2.0 · Ngày soạn: 05/11/2026.
 
 ## Tóm tắt
 
@@ -159,9 +159,11 @@ Hướng dẫn từng lần bấm và khối lệnh phân biệt Windows/Ubuntu 
 
 ## 14. Kiểm thử và kết quả hiện có
 
-Bộ kiểm thử phần mềm gồm26 test, đã chạy đạt trong môi trường Linux phát triển. Nội dung bao gồm công thức CPU/RAM, giá trị không hợp lệ, hysteresis/UNKNOWN, dedup/gộp tin, lưu trạng thái/queue qua restart, retry429, stale data, CSV, chặn truy cập web không hợp lệ, schema project GNS3 và kiểm tra VMX.
+Bộ kiểm thử phần mềm gồm 50 test, đã chạy đạt trong môi trường Linux phát triển. Nội dung bao gồm công thức CPU/RAM, giá trị không hợp lệ, hysteresis/UNKNOWN, dedup/gộp tin, lưu trạng thái/queue qua restart, retry429, stale data, CSV, chặn truy cập web không hợp lệ, schema project GNS3 và kiểm tra VMX.
 
 Test giao thức tạo SSH server và SNMPv2c responder loopback cục bộ. SSH thực hiện hai lệnh trên cùng transport được pin host key; SNMP xác minh OID extend và giải mã JSON qua UDP thật. Kiểm thử web trình duyệt dùng dữ liệu mô phỏng, kiểm tra desktop/mobile và tải CSV.
+
+Các kiểm thử bổ sung gồm HTTP 200/503/chậm qua loopback, xử lý ping mất gói một phần, định dạng lệnh Windows .NET Ping, CSV, lưu trạng thái health, báo cáo HTML và schema sơ đồ xem ngay. Chưa thực thi PowerShell trên Windows hoặc đo iperf3 trên hai clone thật.
 
 Không có số liệu nghiệm thu VMware/GNS3/Telegram/Slack thật của người dùng trong lần dựng này. Không tuyên bố độ trễ, overhead CPU, SLA hoặc tỷ lệ thành công thực tế khi chưa đo. Bộ mẫu báo cáo kết quả để trống trạng thái CHUA_CHAY, cần bổ sung ảnh, thời gian và cấu hình máy.
 
@@ -180,13 +182,34 @@ Không có số liệu nghiệm thu VMware/GNS3/Telegram/Slack thật của ngư
 
 Đo CPU nền bằng vmstat 1 giây trong30 mẫu khi monitor dừng và chạy, bỏ dòng đầu từ lúc boot; giữ điều kiện giống nhau. Đo ít nhất 3lần độ trễ cho mỗi nhóm cảnh báo. Chỉ so sánh số đo cùng công thức/cửa sổ; không gọi tỷ lệ mẫu online là SLA thời gian [5, trang PDF 28–29].
 
-## 16. Giới hạn và hướng phát triển
+## 16. Vận dụng bài thực hành buổi 5
+
+Tài liệu Bài tập thực hành buổi 5.docx gồm 10 lab trong 6 tiết [10]. Các Lab 1, 2, 3, 4, 6 và 10 phù hợp trực tiếp với đề tài. Hệ thống vận dụng các mục tiêu này vào mô hình GNS3 hiện tại; không chuyển sang Mininet, không ghi những tính năng bảo mật chưa triển khai là kết quả đã hoàn thành.
+
+| Nội dung | Bổ sung vào NetWatch | Phạm vi |
+|---|---|---|
+| Lab 1 — Tài nguyên và CSV | Profile chu kỳ 5s, CPU >85%, RAM >90%, tự ghi system_metrics.csv theo từng interface | Profile riêng; cấu hình đồ án mặc định giữ 15s/75%/65% |
+| Lab 2 — ICMP | Gửi 10 gói/thiết bị, tính RTT trung bình và tỷ lệ mất gói thực tế, lưu lịch sử/cảnh báo | Worker riêng mỗi 60s; không tự gọi SSH offline khi ICMP bị lọc |
+| Lab 3 — iperf3 | Hai phép đo TCP theo hai hướng R1/SRV1, CSV riêng | Theo yêu cầu; 5s/chiều, giới hạn tải 20Mbps; không phải tốc độ Internet hay băng thông tối đa |
+| Lab 4 — HTTP | Kiểm tra status 200 và thời gian nhận header không quá 3s; dùng chung outbox Telegram/Slack | Web mẫu tại SRV1:8000, có chế độ 503 và delay 4s để nghiệm thu |
+| Lab 6 — Bắt gói | Hướng dẫn thu 50 gói bằng Wireshark trên link server trong GNS3 | Xem IP, protocol, cổng và handshake; không tuyên bố có chương trình scapy |
+| Lab 10 — Báo cáo | Dashboard có RTT/loss/HTTP; xuất HTML độc lập với biểu đồ CPU/RAM/RTT và sự kiện | HTML không dùng CDN, in ra PDF từ trình duyệt |
+
+Ngưỡng RTT >100ms và packet loss >20% là tham số thiết kế bổ sung; ngưỡng HTTP >3s, CPU >85%, RAM >90% đến từ tài liệu. Thời gian HTTP đo đến khi nhận header, không phải thời gian tải toàn bộ nội dung. Lỗi công cụ ping cho kết quả UNKNOWN; không phản hồi đủ 10 gói cho loss 100% và RTT trống; phản hồi một phần vẫn giữ đúng bộ đếm và RTT đã đo.
+
+Mã mẫu của tài liệu cần điều chỉnh trước khi áp dụng: IP trong DEVICES không khớp topology; CPU/RAM của namespace Mininet dùng chung tài nguyên máy nền; OID CPU Cisco không dùng chung cho Ubuntu; lỗi SNMP không được trả 0 rồi ghi OK. Sender/Receiver trong một lượt iperf3 không thể diễn giải thành upload/download hai chiều. Hệ thống mới xử lý các điểm này bằng inventory thống nhất, hai VM độc lập, probe được kiểm chứng và reverse test riêng.
+
+Lab 5/7/8/9 về quét toàn dải cổng, phát hiện ARP spoofing, brute-force và tự chặn IP chưa được thêm vào collector. Giữ các mục này làm hướng mở rộng có chính sách riêng, thay vì tự khóa địa chỉ quản trị. Các tình huống HTTP/ICMP và iperf3 thật cần chạy theo docs/05_BUOI_5.md và ghi kết quả nghiệm thu.
+
+Để giảm thao tác tải/mở, repository có task VS Code, sơ đồ GNS3 drawings mở ngay và launcher tạo lab VM thật từ hai VMX. Sơ đồ xem ngay không chứa node đang thực thi; không giả định đã có Ubuntu disk hoặc đường dẫn VMX của máy triển khai.
+
+## 17. Giới hạn và hướng phát triển
 
 R1 là điểm lỗi đơn của hai LAN; dashboard mất nguồn dữ liệu khi Windows tắt. SQLite thích hợp lab nhỏ; chưa có cơ chế HA, phân quyền người dùng web hoặc triển khai qua nhiều máy quản trị. Dữ liệu nhiệt độ thường không hỗ trợ trên VMware, SNMPv2c không mã hóa, mật khẩu SSH vẫn là secret cần bảo vệ cục bộ.
 
 Hướng phát triển theo thứ tự: hoàn tất bằng chứng lab thật; đo overhead/độ trễ và tinh chỉnh chu kỳ/ngưỡng; bổ sung SSH key/SNMPv3; triển khai web có xác thực/TLS nếu cần chia sẻ; sau đó mới xem xét nhiều thiết bị hơn, bộ nhớ dài hạn hoặc VPN/SDN như bài mở rộng độc lập.
 
-## 17. Kết luận
+## 18. Kết luận
 
 Thiết kế mới đưa router Linux vào vai trò trung tâm định tuyến, có server và mạng người dùng riêng, đáp ứng việc dùng GNS3 để kiểm chứng đường mạng. Hệ thống giám sát giữ đúng trọng tâm CPU/RAM/nhiệt độ/interface, có cảnh báo, phục hồi, dashboard và dữ liệu lịch sử.
 
@@ -211,5 +234,7 @@ Phần mềm và tài liệu đã được dựng, kiểm thử trong môi trư�
 [8] GNS3/gns3-server v2.2.61, gns3server/compute/vmware/vmware_vm.py và schemas/vmware.py — cơ chế bảo vệ NAT adapter, cấp VMnet và định dạng node. https://github.com/GNS3/gns3-server/tree/v2.2.61
 
 [9] Net-SNMP, NET-SNMP-EXTEND-MIB — cơ chế extend và nsExtendOutputFull. https://www.net-snmp.org/docs/mibs/NET-SNMP-EXTEND-MIB.txt
+
+[10] Bài tập thực hành buổi 5.docx — 6 tiết, 10 lab hiệu suất và bảo mật; nguồn do người dùng cung cấp. Phần vận dụng: Lab 1, 2, 3, 4, 6 và 10.
 
 Danh mục SHA-256 nguồn và bảng liên hệ từng chương nằm ở docs/sources.json và docs/04_LIEN_HE_MON_HOC.md. Không đưa các PDF bài giảng gốc vào gói phát hành.

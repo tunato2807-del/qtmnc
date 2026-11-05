@@ -59,6 +59,35 @@ def create_app(config, store, demo=False, channels=()):
     def events():
         return jsonify(store.events())
 
+    def health_definitions():
+        checks = config["checks"]
+        result = [{"id": "ping-" + d["id"], "name": "ICMP " + d["name"], "device": d["id"], "kind": "ping", "enabled": checks["enabled"] or demo} for d in config["devices"]]
+        result += [{"id": "http-" + s["id"], "name": s["name"], "device": s["device"], "kind": "http", "enabled": (checks["enabled"] and s.get("enabled", False)) or demo} for s in checks["http_services"]]
+        return result
+
+    @app.get("/api/health")
+    def health():
+        now = time.time()
+        saved = {v["id"]: v for v in store.health()}
+        items = []
+        for definition in health_definitions():
+            item = saved.get(definition["id"]) if definition["enabled"] else None
+            freshness = "disabled" if not definition["enabled"] else "waiting" if not item else "stale" if now - item["at"] > 3 * config["checks"]["interval_seconds"] else "fresh"
+            items.append({**definition, "sample": item, "freshness": freshness})
+        return jsonify({"items": items, "interval": config["checks"]["interval_seconds"], "latency_ms": config["checks"]["latency_ms"], "packet_loss_pct": config["checks"]["packet_loss_pct"], "http_slow_seconds": config["checks"]["http_slow_seconds"]})
+
+    @app.get("/api/health/history")
+    def health_history():
+        check_id = request.args.get("check", "ping-" + config["devices"][0]["id"])
+        if check_id not in {c["id"] for c in health_definitions()}:
+            abort(404)
+        return jsonify(store.health_history(check_id))
+
+    @app.get("/api/report")
+    def report():
+        from .report import build_html
+        return Response(build_html(store, config), mimetype="text/html; charset=utf-8", headers={"Content-Disposition": 'attachment; filename="NetWatch_bao_cao.html"'})
+
     @app.get("/api/export")
     def export():
         device = selected()

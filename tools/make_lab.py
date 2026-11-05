@@ -2,12 +2,50 @@
 """Tạo project GNS3 local có đường dẫn VMX thật; không thay đổi VMX."""
 import argparse
 import json
+import os
 import re
 import uuid
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def discover_vms(candidates=None):
+    """Chỉ tự chọn khi có duy nhất clone tên R1-LINUX và SRV1-LINUX."""
+    if candidates is None:
+        candidates = []
+        appdata = os.getenv("APPDATA")
+        if appdata:
+            inventory = Path(appdata) / "VMware/inventory.vmls"
+            if inventory.is_file():
+                for line in inventory.read_text(encoding="utf-8", errors="replace").splitlines():
+                    match = re.match(r'\s*[^=]+\.config\s*=\s*"(.+\.vmx)"', line, flags=re.I)
+                    if match:
+                        candidates.append(Path(match[1]))
+        roots = [Path.home() / "Documents/Virtual Machines", Path("D:/VMs/NetWatch")]
+        for root in roots:
+            if root.is_dir():
+                candidates.extend(root.glob("*.vmx"))
+                candidates.extend(root.glob("*/*.vmx"))
+    found = {"router": [], "server": []}
+    for path in set(Path(p) for p in candidates):
+        try:
+            path, values = read_vmx(path)
+            label = values.get("displayname", path.stem).upper()
+            role = "router" if label == "R1-LINUX" else "server" if label == "SRV1-LINUX" else None
+            if role:
+                found[role].append(path)
+        except (OSError, ValueError):
+            pass
+    return {role: paths[0] if len(paths) == 1 else None for role, paths in found.items()}
+
+
+def open_project(path):
+    if os.name == "nt":
+        os.startfile(str(path))
+    else:
+        print("Mở trong GNS3 → File → Open:", path)
 
 
 def read_vmx(path):
@@ -105,19 +143,26 @@ def main():
     parser.add_argument("--router-vmx")
     parser.add_argument("--server-vmx")
     parser.add_argument("--output", type=Path, default=ROOT / "lab/generated/NETWATCH_ROUTED")
+    parser.add_argument("--open", action="store_true", help="Mở GNS3 sau khi tạo; nếu project đã có thì chỉ mở, không ghi đè")
     args = parser.parse_args()
     try:
-        router, server = validate_vms(args.router_vmx or choose("Chọn R1-LINUX.vmx"), args.server_vmx or choose("Chọn SRV1-LINUX.vmx"))
-        if any(router.parent.glob("*.lck")) or any(server.parent.glob("*.lck")):
-            raise ValueError("VM đang mở hoặc bị khóa; tắt hai VM trước khi tạo")
         output = args.output.resolve()
         target = output / "NETWATCH_ROUTED.gns3"
         if target.exists():
-            raise ValueError("Project đã tồn tại; dùng --output với thư mục mới để giữ lab đang dùng")
+            if args.open:
+                open_project(target)
+                return
+            raise ValueError("Project đã tồn tại; dùng --open để mở lại hoặc --output với thư mục mới")
+        discovered = discover_vms()
+        router, server = validate_vms(args.router_vmx or discovered["router"] or choose("Chọn R1-LINUX.vmx"), args.server_vmx or discovered["server"] or choose("Chọn SRV1-LINUX.vmx"))
+        if any(router.parent.glob("*.lck")) or any(server.parent.glob("*.lck")):
+            raise ValueError("VM đang mở hoặc bị khóa; tắt hai VM trước khi tạo")
         output.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(project(router, server), ensure_ascii=False, indent=2), encoding="utf-8")
         print("Đã tạo:", target)
         print("GNS3 → File → Open → chọn file này. Xem docs/01_GNS3.md trước khi Start.")
+        if args.open:
+            open_project(target)
     except (OSError, ValueError) as exc:
         parser.exit(1, str(exc) + "\n")
 

@@ -69,6 +69,8 @@ Với từng thiết bị, dán phần **SHA256:...** lấy trực tiếp từ �
 
 Mở trình duyệt tại **http://127.0.0.1:8765**. Giữ cửa sổ NetWatch và GNS3 đang chạy. Nếu dùng VS Code debug, chọn interpreter `.venv-netwatch\Scripts\python.exe`, chọn profile “NetWatch — lab thật”.
 
+Phần bổ sung Buổi5 có thẻ RTT/mất gói và HTTP, biểu đồ RTT cùng nút báo cáo HTML. Xem [hướng dẫn Buổi5](05_BUOI_5.md) để bật web mẫu, CSV tự ghi và profile5s/CPU85%/RAM90%. ICMP không phản hồi không tự coi SSH mất kết nối.
+
 Dashboard gồm:
 
 | Vùng | Ý nghĩa |
