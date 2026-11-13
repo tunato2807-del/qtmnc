@@ -4,6 +4,8 @@ Bản **làm lại từ đầu** cho đồ án: Python trên Windows giám sát 
 
 **Tải và mở bằng VS Code:** xem [hướng dẫn từng lần bấm](docs/00_TAI_BANG_VSCODE.md). File [NETWATCH_XEM_NGAY.gns3](lab/gns3/NETWATCH_XEM_NGAY.gns3) mở được ngay để xem sơ đồ, không chứa VM hoặc đường dẫn VMX giả. Chạy `open_gns3_lab.cmd` để tạo/mở topology Ubuntu thật sau khi chọn hai VMX trên máy bạn.
 
+**Muốn tự vẽ từ project trống:** dùng [hướng dẫn từ setup từng máy đến kéo thiết bị/nối dây](docs/06_TU_VE_GNS3_TUNG_BUOC.md), có [bản HTML](docs/06_TU_VE_GNS3_TUNG_BUOC.html), [Word](docs/06_TU_VE_GNS3_TUNG_BUOC.docx) và [PDF](docs/06_TU_VE_GNS3_TUNG_BUOC.pdf). Hướng dẫn tách rõ PowerShell Windows, console Ubuntu R1/SRV1 và VPCS, kèm điểm kiểm tra từng chặng; không cần trình tạo topology tự động.
+
 **Bổ sung từ Buổi 5:** đo RTT/mất gói, giám sát HTTP 200/chậm>3s, CSV tự ghi, iperf3 theo yêu cầu và báo cáo HTML/PDF. [Bảng đối chiếu cả 10 lab và cách thực hiện](docs/05_BUOI_5.md). Profile `start_buoi5.cmd` dùng 5s/CPU85%/RAM90%; profile đồ án vẫn 15s/75%/65%.
 
 ![Mô hình mới](docs/figures/topology.png)
