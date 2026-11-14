@@ -1,0 +1,46 @@
+NETWATCH — KIỂM TRA BÁO CÁO ĐỒ ÁN 2026–2027
+Ngày tổng hợp: 15/11/2026 (Asia/Bangkok)
+Mã nguồn đối chiếu: d6a1c3e6cee8da3315441b4983f1b6e7d47ab1c2
+
+1. Kiểm thử phần mềm bổ sung trên Linux
+Python 3.12.14; dependencies từ requirements-dev.txt trong .venv-test.
+Lệnh: .venv-test/bin/python -m unittest discover -v
+Kết quả runner: Ran 50 tests in 2.320s; OK.
+Passed: 50. Failed/errors: 0. Skipped: 0.
+SSH/SNMP wire tests chạy loopback, không dùng các clone của người triển khai.
+Các kiểm thử Telegram/Slack có phản hồi kiểm soát, không gửi tin thật.
+Thông báo Socket exception trong test SSH không làm test thất bại.
+Phụ thuộc: pip check báo No broken requirements found.
+
+2. Chức năng demo đã xác minh trong môi trường phát triển
+GET /, /static/app.js, /api/state, /api/history, /api/health,
+/api/report, /api/export: HTTP 200, có nội dung.
+State: demo=true, hai thiết bị có mẫu fresh; history có dữ liệu.
+Demo không chứng minh trạng thái lab thật hoặc việc gửi Telegram.
+
+3. Kiểm tra tài liệu
+DOCX mở được bằng python-docx; toàn vẹn ZIP đạt.
+Hai section: phần đầu không đánh số; Mở đầu bắt đầu số 1.
+A4; lề trên/dưới/phải 2 cm; lề trái 3 cm.
+Normal: Times New Roman 13, giãn dòng 1.5; Heading 1–3: 16.
+Ba trường TOC động; 71 tham chiếu trang tiêu đề/chú thích đã đối chiếu.
+4 hình PNG được nhúng, 14 bảng, 15 tài liệu tham khảo.
+Bản render kiểm tra LibreOffice: 44 trang; phần Mở đầu ở trang vật lý 14.
+Không có trang trắng hoặc khối chữ ngoài khổ giấy.
+Đã xem trang bìa, mục lục, trang nội dung, hình và bảng đại diện.
+Font trong DOCX khai báo Times New Roman. Máy render dùng Liberation Serif
+thay thế vì không có font Times New Roman; Word trên máy có font có thể
+phân trang khác. Cần F9 cập nhật mục lục sau khi sửa nội dung/chèn ảnh.
+PDF kiểm tra giữ tại /tmp/netwatch-report-render, không đưa vào Git.
+
+4. Minh chứng lab do người dùng cung cấp
+Xác nhận hai máy đã giám sát được, chu kỳ 15 giây.
+Telegram đã nhận cảnh báo CPU và phục hồi; sự kiện đọc được 13/11/2026 +0700.
+HTTP SRV1 chưa bật. Không có tệp ảnh nghiệm thu gốc có thể truy cập.
+Chưa nhúng năm ảnh gốc vào Word: chỉ chép số liệu và tạo hình tổng hợp
+có ghi nhãn rõ, không phải ảnh chụp. Phụ lục 3 liệt kê từng ảnh đã đọc.
+Không có số đo độ trễ đầu cuối hoặc log dài hạn; không tuyên bố đã đo.
+
+5. Giới hạn chỉnh sửa
+Chỉ thêm sản phẩm báo cáo, script dựng, hình và ghi chú trong docs/report.
+Không sửa mã ứng dụng, tests, inventory, requirements hoặc báo cáo cũ.
